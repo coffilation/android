@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <layer-list>
+            <item android:drawable="@drawable/gradient_green_shape" />
+            <item
+                android:drawable="@drawable/selected"
+                android:right="@dimen/selected_margin"
+                android:left="@dimen/selected_margin"
+                android:bottom="@dimen/selected_margin"
+                android:top="@dimen/selected_margin" />
+        </layer-list>
+    </item>
+    <item android:drawable="@drawable/gradient_green_shape" />
+</selector>

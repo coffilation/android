@@ -2,7 +2,10 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.Coffilation" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/main_orange</item>
+        <item name="colorPrimaryDark">@color/dark_orange</item>
+        <item name="colorSecondaryContainer">@color/main_orange</item>
+        <item name="colorSurface">@color/light_gray</item>
     </style>
 
     <style name="Theme.Coffilation" parent="Base.Theme.Coffilation" />

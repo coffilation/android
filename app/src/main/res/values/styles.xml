@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Widget.App.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.FilledBox">
+        <item name="android:textColorHint">?android:textColorHint</item>
+        <item name="hintTextColor">?android:textColorHint</item>
+        <item name="endIconTint">?android:textColorTertiary</item>
+        <item name="hintEnabled">false</item>
+
+        <item name="boxBackgroundColor">@color/text_input_background_color</item>
+
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCornerRadiusTopStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">0dp</item>
+        <!--<item name="materialThemeOverlay">@style/ThemeOverlay.Realty.Background.Gray1</item>-->
+    </style>
+
+    <style name="Widget.App.BottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="paddingBottomSystemWindowInsets">false</item>
+        <item name="backgroundTint">?colorSurface</item>
+    </style>
+
+    <style name="Widget.App.SectionTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+</resources>

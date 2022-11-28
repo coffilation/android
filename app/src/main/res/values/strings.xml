@@ -7,6 +7,26 @@
     <string name="next">Next</string>
     <string name="previous">Previous</string>
 
+    <string name="submit">Submit</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="repassword">Repeat your password</string>
+    <string name="sign_up_link">Don\'t have an account? <a href="/">Sign up</a></string>
+    <string name="sign_in_link">Already have an account? <a href="/">Sign in</a></string>
+
+    <string name="search">Search</string>
+    <string name="search_submit">Go</string>
+    <string name="discoveries">Discoveries</string>
+    <string name="my_collections">My collections</string>
+    <string name="add">Add</string>
+    <string name="error">Error!\nCheck your Internet connection</string>
+
+    <string name="public_access">Public</string>
+    <string name="private_access">Private</string>
+    <string name="title">Title</string>
+    <string name="description">Description</string>
+    <string name="done">Done</string>
+
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
         volutpat, dolor id interdum ullamcorper, risus dolor egestas lectus, sit amet mattis purus
