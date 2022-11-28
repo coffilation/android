@@ -20,7 +20,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/user_pic"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:elevation="10dp"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
@@ -36,8 +35,7 @@
             android:paddingTop="12dp"
             android:clickable="true"
             android:focusable="false"
-            android:inputType="none"
-            android:enabled="false"/>
+            android:inputType="none"/>
 
     </com.google.android.material.textfield.TextInputLayout>
 

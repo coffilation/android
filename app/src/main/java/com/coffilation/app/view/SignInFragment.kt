@@ -7,17 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.findNavController
 import com.coffilation.app.R
 import com.coffilation.app.data.UserSignInData
-import com.coffilation.app.data.UserSignUpData
-import com.coffilation.app.databinding.FragmentSecondBinding
 import com.coffilation.app.databinding.FragmentSignInBinding
-import com.coffilation.app.databinding.FragmentSignUpBinding
 import com.coffilation.app.util.changeUrlSpanClickAction
 import com.coffilation.app.viewmodel.SignInViewModel
-import com.coffilation.app.viewmodel.SignUpViewModel
 import com.coffilation.app.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -48,7 +42,7 @@ class SignInFragment : Fragment() {
         binding?.signUpSuggest?.apply {
             movementMethod = LinkMovementMethod.getInstance()
             text = resources.getText(R.string.sign_up_link).changeUrlSpanClickAction {
-                findNavController().navigate(R.id.action_SignInFragment_to_SignUpFragment)
+                //findNavController().navigate(R.id.action_SignInFragment_to_SignUpFragment)
             }
         }
     }

@@ -4,22 +4,20 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.findNavController
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupWithNavController
 import com.coffilation.app.R
 import com.coffilation.app.data.CollectionAddData
 import com.coffilation.app.data.CollectionType
 import com.coffilation.app.data.ColorData
 import com.coffilation.app.data.GradientData
 import com.coffilation.app.databinding.FragmentEditCollectionBinding
-import com.coffilation.app.util.setBackStackData
 import com.coffilation.app.view.MainFragment.Companion.KEY_USER_COLLECTIONS_CHANGED
+import com.coffilation.app.view.MainFragment.Companion.REQUEST_KEY_EDIT_COLLECTION
 import com.coffilation.app.viewmodel.EditCollectionViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -43,11 +41,13 @@ class EditCollectionFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val navController = findNavController()
-        val appBarConfiguration = AppBarConfiguration(navController.graph)
-
         binding?.run {
-            toolbar.setupWithNavController(navController, appBarConfiguration)
+            (requireActivity() as? AppCompatActivity)?.setSupportActionBar(toolbar)
+            toolbar.setNavigationIcon(com.google.android.material.R.drawable.ic_arrow_back_black_24)
+            toolbar.setNavigationOnClickListener {
+                requireActivity().onBackPressed()
+            }
+            toolbar.title = ""
             buttonDone.setOnClickListener {
                 val collectionAddData = CollectionAddData(
                     name = title.text.toString(),
@@ -61,7 +61,8 @@ class EditCollectionFragment : Fragment() {
                 )
                 viewModel.viewModelScope.launch {
                     viewModel.addCollection(collectionAddData)
-                    setBackStackData(KEY_USER_COLLECTIONS_CHANGED, true)
+                    setFragmentResult(REQUEST_KEY_EDIT_COLLECTION, bundleOf(KEY_USER_COLLECTIONS_CHANGED to true))
+                    parentFragmentManager.popBackStack()
                 }
             }
         }

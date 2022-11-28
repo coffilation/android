@@ -1,0 +1,55 @@
+package com.coffilation.app.view.delegate
+
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import androidx.core.widget.doOnTextChanged
+import com.coffilation.app.databinding.ItemSearchInputBinding
+import com.coffilation.app.util.delegate.BindingAdapterDelegate
+import com.coffilation.app.util.viewholder.BindingViewHolder
+import com.coffilation.app.view.item.AdapterItem
+import com.coffilation.app.view.item.SearchInputItem
+
+/**
+ * @author pvl-zolotov on 28.11.2022
+ */
+class SearchInputItemDelegate(
+    private val onInputChanged: (String) -> Unit,
+    private val onSearchStart: () -> Unit,
+) : BindingAdapterDelegate<SearchInputItem, AdapterItem, ItemSearchInputBinding>(
+    SearchInputItem::class.java,
+    ItemSearchInputBinding::inflate
+) {
+
+    override fun onCreateViewHolder(inflater: LayoutInflater, parent: ViewGroup): BindingViewHolder<ItemSearchInputBinding> {
+        return super.onCreateViewHolder(inflater, parent).apply {
+            binding.search.setOnEditorActionListener { textView, actionId, keyEvent ->
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    onSearchStart.invoke()
+                    true
+                } else {
+                    false
+                }
+            }
+            binding.search.doOnTextChanged { text, start, count, after ->
+                onInputChanged.invoke(text.toString())
+            }
+            binding.go.setOnClickListener {
+                onSearchStart.invoke()
+            }
+        }
+    }
+
+    override fun onBindViewHolder(
+        item: SearchInputItem,
+        viewHolder: BindingViewHolder<ItemSearchInputBinding>,
+        payloads: List<Any>
+    ) {
+        item.lastAppliedSuggestion?.also {
+            viewHolder.binding.search.apply {
+                setText(it)
+                setSelection(it.length)
+            }
+        }
+    }
+}
