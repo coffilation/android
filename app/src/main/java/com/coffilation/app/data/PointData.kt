@@ -6,9 +6,11 @@ package com.coffilation.app.data
 data class PointData(
     val id: Long,
     val name: String,
-    val latitude: Float,
-    val longitude: Float,
+    val latitude: Double,
+    val longitude: Double,
     val displayName: String,
     val category: String,
     val type: String,
+    val osmType: String,
+    val osmId: Long,
 )

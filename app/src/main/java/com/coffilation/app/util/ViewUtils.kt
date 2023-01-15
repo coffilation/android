@@ -1,11 +1,14 @@
 package com.coffilation.app.util
 
+import android.app.Activity
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.coffilation.app.data.GradientData
@@ -21,6 +24,20 @@ fun GradientData.toDrawable(): Drawable {
             Color.rgb(endColor.red, endColor.green, endColor.blue),
         )
     )
+}
+
+fun hideKeyboard(view: View) {
+    view.clearFocus()
+    val imm = view.context
+        .getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+    imm?.hideSoftInputFromWindow(view.windowToken, 0)
+}
+
+fun hideKeyboard(activity: Activity) {
+    val view = activity.currentFocus
+    if (view != null) {
+        hideKeyboard(view)
+    }
 }
 
 fun dpToPx(context: Context, dp: Float): Int {

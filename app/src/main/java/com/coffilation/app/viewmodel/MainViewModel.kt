@@ -1,10 +1,15 @@
 package com.coffilation.app.viewmodel
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.data.CollectionData
+import com.coffilation.app.data.PointData
+import com.coffilation.app.data.SearchData
 import com.coffilation.app.network.CollectionsRepository
+import com.coffilation.app.network.SearchRepository
 import com.coffilation.app.storage.PrefRepository
 import com.coffilation.app.util.UseCaseResult
 import com.coffilation.app.view.viewstate.MainViewState
@@ -20,18 +25,20 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 
 class MainViewModel(
     private val collectionsRepository: CollectionsRepository,
+    private val searchRepository: SearchRepository,
     private val prefRepository: PrefRepository
 ) : ViewModel() {
 
@@ -46,6 +53,8 @@ class MainViewModel(
     private val searchQueryFlow = MutableStateFlow("")
     private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
+    private val searchResultsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
+    private val detailedPointFlow = MutableStateFlow<PointData?>(null)
 
     private val viewStateFlow = combine(
         modeFlow,
@@ -55,6 +64,8 @@ class MainViewModel(
         userCollectionsFlow,
         lastAppliedSuggestionFlow,
         searchSuggestionsFlow,
+        searchResultsFlow,
+        detailedPointFlow,
     ) { data ->
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
@@ -65,10 +76,14 @@ class MainViewModel(
             data[4] as UseCaseResult<List<CollectionData>>?,
             data[5] as String?,
             data[6] as UseCaseResult<List<SuggestItem>>?,
+            data[7] as UseCaseResult<List<PointData>>?,
+            data[8] as UseCaseResult<PointData>?,
         )
     }
 
+    private val mutableAction = MutableLiveData<Action>()
     val viewState = viewStateFlow.asLiveData()
+    val action: LiveData<Action> = mutableAction
 
     init {
         viewModelScope.launch {
@@ -77,37 +92,53 @@ class MainViewModel(
             userIdFlow.value = userId
             publicCollectionsFlow.value = collectionsRepository.getPublicCollections()
             userCollectionsFlow.value = collectionsRepository.getUserCollections(userId)
+        }
 
-            @OptIn(ExperimentalCoroutinesApi::class)
-            searchQueryFlow.combine(
-                modeFlow.filterIsInstance<MainViewState.MainViewStateMode.Search>()
-            ) { query, mode ->
-                query to mode.boundingBox
-            }.flatMapLatest { (query, boundingBox) ->
-                callbackFlow<UseCaseResult<List<SuggestItem>>?> {
-                    val suggestListener = object : SuggestSession.SuggestListener {
+        @OptIn(ExperimentalCoroutinesApi::class)
+        searchQueryFlow.combine(
+            modeFlow.filterIsInstance<MainViewState.MainViewStateMode.Search>()
+        ) { query, mode ->
+            query to mode.boundingBox
+        }.flatMapLatest { (query, boundingBox) ->
+            callbackFlow<UseCaseResult<List<SuggestItem>>?> {
+                val suggestListener = object : SuggestSession.SuggestListener {
 
-                        override fun onResponse(data: MutableList<SuggestItem>) {
-                            trySend(UseCaseResult.Success(data))
-                        }
-
-                        @Suppress("ThrowableNotThrown")
-                        override fun onError(error: Error) {
-                            trySend(UseCaseResult.Error(Exception("Something went wrong")))
-                        }
+                    override fun onResponse(data: MutableList<SuggestItem>) {
+                        trySend(UseCaseResult.Success(data))
                     }
 
-                    suggestSession.suggest(query, boundingBox, SEARCH_OPTIONS, suggestListener)
-                    awaitClose { suggestSession.reset() }
+                    @Suppress("ThrowableNotThrown")
+                    override fun onError(error: Error) {
+                        trySend(UseCaseResult.Error(Exception("Something went wrong")))
+                    }
                 }
-            }.onEach {
-                searchSuggestionsFlow.value = it
-            }.collect()
 
-            lastAppliedSuggestionFlow.filterNotNull().onEach {
-                searchQueryFlow.value = it
-            }.collect()
-        }
+                suggestSession.suggest(query, boundingBox, SEARCH_OPTIONS, suggestListener)
+                awaitClose { suggestSession.reset() }
+            }
+        }.onEach {
+            searchSuggestionsFlow.value = it
+        }.launchIn(viewModelScope)
+
+        searchQueryFlow.combine(
+            modeFlow.filterIsInstance<MainViewState.MainViewStateMode.SearchResults>()
+        ) { query, mode ->
+            query to mode.boundingBox
+        }.map { (query, boundingBox) ->
+            searchRepository.search(SearchData.newInstance(boundingBox, query))
+        }.onEach {
+            searchResultsFlow.value = it
+        }.launchIn(viewModelScope)
+
+        lastAppliedSuggestionFlow.filterNotNull().onEach {
+            searchQueryFlow.value = it
+        }.launchIn(viewModelScope)
+
+        userCollectionsFlow.filterIsInstance<UseCaseResult.Error>().onEach {
+            if (it.exception is HttpException && it.exception.code() == UNAUTHORIZED_CODE) {
+                mutableAction.value = Action.ShowSignIn
+            }
+        }.launchIn(viewModelScope)
     }
 
     fun updateUserCollections() {
@@ -127,6 +158,10 @@ class MainViewModel(
         modeFlow.value = MainViewState.MainViewStateMode.Search(boundingBox)
     }
 
+    fun changeModeToSearchResults(boundingBox: BoundingBox) {
+        modeFlow.value = MainViewState.MainViewStateMode.SearchResults(boundingBox)
+    }
+
     fun setSearchQuery(query: String) {
         searchQueryFlow.value = query
     }
@@ -135,7 +170,32 @@ class MainViewModel(
         lastAppliedSuggestionFlow.value = suggestItem.displayText
     }
 
+    fun showSearchResults(boundingBox: BoundingBox) {
+        lastAppliedSuggestionFlow.value = searchQueryFlow.value
+        changeModeToSearchResults(boundingBox)
+
+        /*val objectArrayString: String = context.resources.openRawResource(R.raw.resp).bufferedReader().use { it.readText() }
+        val listType = object : TypeToken<List<PointData>>() {}.type
+        val objectArray = Gson().fromJson<List<PointData>>(objectArrayString, listType)
+        searchResultsFlow.value = UseCaseResult.Success(objectArray as List<PointData>)*/
+    }
+
+    fun showDetailedPoint(pointData: PointData) {
+
+    }
+
+    /*fun selectPoint(point: PointData) {
+        selectedPointFlow.value = point
+    }*/
+
+    sealed class Action {
+
+        object ShowSignIn : Action()
+    }
+
     companion object {
+
+        private const val UNAUTHORIZED_CODE = 401
 
         private val SEARCH_OPTIONS = SuggestOptions().setSuggestTypes(
             SuggestType.GEO.value or

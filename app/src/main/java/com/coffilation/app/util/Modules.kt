@@ -7,6 +7,9 @@ import com.coffilation.app.network.AuthRepositoryImpl
 import com.coffilation.app.network.CollectionRepositoryImpl
 import com.coffilation.app.network.CollectionsApi
 import com.coffilation.app.network.CollectionsRepository
+import com.coffilation.app.network.SearchApi
+import com.coffilation.app.network.SearchRepository
+import com.coffilation.app.network.SearchRepositoryImpl
 import com.coffilation.app.network.SignInRepository
 import com.coffilation.app.network.SignInRepositoryImpl
 import com.coffilation.app.network.UsersApi
@@ -32,6 +35,7 @@ import retrofit2.converter.gson.GsonConverterFactory
  * @author pvl-zolotov on 15.10.2022
  */
 const val API_BASE_URL = "https://backend.test.coffilation.ru/"
+const val API_SEARCH_BASE_URL = "https://search.test.coffilation.ru/"
 
 val usersModule = module {
     single {
@@ -66,7 +70,17 @@ val collectionsModule = module {
     }
     factory<CollectionsRepository> { CollectionRepositoryImpl(collectionsApi = get()) }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
-    viewModel { MainViewModel(collectionsRepository = get(), prefRepository = get()) }
+    viewModel { MainViewModel(collectionsRepository = get(), searchRepository = get(), prefRepository = get()) }
+}
+
+val searchModule = module {
+    single {
+        createWebService<SearchApi>(
+            okHttpClient = createHttpClient(prefRepository = get(), authRepository = get()),
+            baseUrl = API_SEARCH_BASE_URL
+        )
+    }
+    factory<SearchRepository> { SearchRepositoryImpl(searchApi = get()) }
 }
 
 val authModule = module {

@@ -4,6 +4,7 @@ import android.app.Application
 import com.coffilation.app.util.authModule
 import com.coffilation.app.util.collectionsModule
 import com.coffilation.app.util.prefModule
+import com.coffilation.app.util.searchModule
 import com.coffilation.app.util.signInModule
 import com.coffilation.app.util.usersModule
 import com.yandex.mapkit.MapKitFactory
@@ -27,6 +28,7 @@ class App : Application() {
                 authModule,
                 prefModule,
                 collectionsModule,
+                searchModule,
             )
             modules(list)
         }

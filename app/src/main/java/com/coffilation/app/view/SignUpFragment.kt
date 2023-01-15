@@ -5,14 +5,18 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.R
 import com.coffilation.app.data.UserSignUpData
 import com.coffilation.app.databinding.FragmentSignUpBinding
 import com.coffilation.app.util.changeUrlSpanClickAction
+import com.coffilation.app.viewmodel.SignInViewModel
 import com.coffilation.app.viewmodel.SignUpViewModel
 import kotlinx.coroutines.launch
+import org.koin.androidx.fragment.android.replace
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -40,7 +44,27 @@ class SignUpFragment : Fragment() {
         binding?.signInSuggest?.apply {
             movementMethod = LinkMovementMethod.getInstance()
             text = resources.getText(R.string.sign_in_link).changeUrlSpanClickAction {
-                //findNavController().navigate(R.id.action_SignUpFragment_to_SignInFragment)
+                parentFragmentManager.commit {
+                    setReorderingAllowed(true)
+                    replace<SignInFragment>(R.id.fragment_container_view)
+                }
+            }
+        }
+
+        signUpViewModel.action.observe(viewLifecycleOwner) {
+            when (it) {
+                SignUpViewModel.Action.RepasswordError -> {
+                    Toast.makeText(requireContext(), R.string.repassword_error, Toast.LENGTH_LONG).show()
+                }
+                SignUpViewModel.Action.LoginError -> {
+                    Toast.makeText(requireContext(), R.string.login_error, Toast.LENGTH_LONG).show()
+                }
+                SignUpViewModel.Action.ShowSignInScreen -> {
+                    parentFragmentManager.commit {
+                        setReorderingAllowed(true)
+                        replace<SignInFragment>(R.id.fragment_container_view)
+                    }
+                }
             }
         }
     }

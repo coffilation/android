@@ -43,7 +43,7 @@ class EditCollectionFragment : Fragment() {
 
         binding?.run {
             (requireActivity() as? AppCompatActivity)?.setSupportActionBar(toolbar)
-            toolbar.setNavigationIcon(com.google.android.material.R.drawable.ic_arrow_back_black_24)
+            toolbar.setNavigationIcon(R.drawable.ic_back)
             toolbar.setNavigationOnClickListener {
                 requireActivity().onBackPressed()
             }

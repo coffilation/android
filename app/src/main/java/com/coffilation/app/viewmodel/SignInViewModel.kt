@@ -8,6 +8,7 @@ import com.coffilation.app.network.AuthRepository
 import com.coffilation.app.network.SignInRepository
 import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.storage.PrefRepository
+import com.coffilation.app.util.SingleLiveEvent
 import com.coffilation.app.util.UseCaseResult
 
 /**
@@ -18,15 +19,29 @@ class SignInViewModel(
     private val prefRepository: PrefRepository
 ) : ViewModel() {
 
+    val action = SingleLiveEvent<Action>()
+
     suspend fun submit(userSignInData: UserSignInData) {
         val result = signInRepository.signIn(userSignInData)
         when (result) {
             is UseCaseResult.Success -> {
                 prefRepository.putAccessToken(result.data.access)
                 prefRepository.putRefreshToken(result.data.refresh)
-                Log.v("test - access", result.data.access)
             }
-            is UseCaseResult.Error -> Log.v("test", "error")
+            is UseCaseResult.Error -> {
+                action.value = Action.PasswordError
+            }
         }
+    }
+
+    fun showMainScreen() {
+        action.value = Action.ShowMainScreen
+    }
+
+    sealed class Action {
+
+        object ShowMainScreen : Action()
+
+        object PasswordError : Action()
     }
 }
