@@ -8,9 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.coffilation.app.data.CollectionData
 import com.coffilation.app.data.PointData
 import com.coffilation.app.data.SearchData
+import com.coffilation.app.data.UserData
 import com.coffilation.app.network.CollectionsRepository
 import com.coffilation.app.network.SearchRepository
-import com.coffilation.app.storage.PrefRepository
+import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.util.UseCaseResult
 import com.coffilation.app.view.viewstate.MainViewState
 import com.yandex.mapkit.geometry.BoundingBox
@@ -39,15 +40,14 @@ import retrofit2.HttpException
 class MainViewModel(
     private val collectionsRepository: CollectionsRepository,
     private val searchRepository: SearchRepository,
-    private val prefRepository: PrefRepository
+    private val usersRepository: UsersRepository
 ) : ViewModel() {
 
     private val searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED)
     private val suggestSession = searchManager.createSuggestSession()
 
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
-    private val usernameFlow = MutableStateFlow<String?>(null)
-    private val userIdFlow = MutableStateFlow<Long?>(null)
+    private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
     private val publicCollectionsFlow = MutableStateFlow<UseCaseResult<List<CollectionData>>?>(null)
     private val userCollectionsFlow = MutableStateFlow<UseCaseResult<List<CollectionData>>?>(null)
     private val searchQueryFlow = MutableStateFlow("")
@@ -58,8 +58,7 @@ class MainViewModel(
 
     private val viewStateFlow = combine(
         modeFlow,
-        usernameFlow.filterNotNull(),
-        userIdFlow.filterNotNull(),
+        userDataFlow,
         publicCollectionsFlow,
         userCollectionsFlow,
         lastAppliedSuggestionFlow,
@@ -70,14 +69,13 @@ class MainViewModel(
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
             data[0] as MainViewState.MainViewStateMode,
-            data[1] as String,
-            data[2] as Long,
+            data[1] as UseCaseResult<UserData>?,
+            data[2] as UseCaseResult<List<CollectionData>>?,
             data[3] as UseCaseResult<List<CollectionData>>?,
-            data[4] as UseCaseResult<List<CollectionData>>?,
-            data[5] as String?,
-            data[6] as UseCaseResult<List<SuggestItem>>?,
-            data[7] as UseCaseResult<List<PointData>>?,
-            data[8] as UseCaseResult<PointData>?,
+            data[4] as String?,
+            data[5] as UseCaseResult<List<SuggestItem>>?,
+            data[6] as UseCaseResult<List<PointData>>?,
+            data[7] as UseCaseResult<PointData>?,
         )
     }
 
@@ -87,11 +85,7 @@ class MainViewModel(
 
     init {
         viewModelScope.launch {
-            usernameFlow.value = prefRepository.getUsername()
-            val userId = prefRepository.getUserId()
-            userIdFlow.value = userId
-            publicCollectionsFlow.value = collectionsRepository.getPublicCollections()
-            userCollectionsFlow.value = collectionsRepository.getUserCollections(userId)
+            userDataFlow.value = usersRepository.me()
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
@@ -134,18 +128,24 @@ class MainViewModel(
             searchQueryFlow.value = it
         }.launchIn(viewModelScope)
 
-        userCollectionsFlow.filterIsInstance<UseCaseResult.Error>().onEach {
-            if (it.exception is HttpException && it.exception.code() == UNAUTHORIZED_CODE) {
+        userDataFlow.filterIsInstance<UseCaseResult.Error>().onEach {
+            val isRequestUnauthorized = it.exception is HttpException && it.exception.code() == UNAUTHORIZED_CODE
+            if (isRequestUnauthorized || !usersRepository.isAuthenticationSaved()) {
                 mutableAction.value = Action.ShowSignIn
             }
+        }.launchIn(viewModelScope)
+
+        userDataFlow.filterIsInstance<UseCaseResult.Success<UserData>>().onEach { userData ->
+            publicCollectionsFlow.value = collectionsRepository.getPublicCollections()
+            userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
         }.launchIn(viewModelScope)
     }
 
     fun updateUserCollections() {
         viewModelScope.launch {
-            val userId = userIdFlow.value
-            if (userId != null) {
-                userCollectionsFlow.value = collectionsRepository.getUserCollections(userId)
+            val userData = userDataFlow.value
+            if (userData is UseCaseResult.Success<UserData>) {
+                userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
             }
         }
     }

@@ -12,11 +12,11 @@ import retrofit2.http.POST
  */
 interface UsersApi {
 
-    @POST("users")
+    @POST("users/")
     suspend fun signUp(
         @Body signUpData: UserSignUpData
     ): UserSignUpResult
 
-    @GET("users/me")
+    @GET("users/me/")
     suspend fun me(): UserData
 }

@@ -2,6 +2,7 @@ package com.coffilation.app.view.viewstate
 
 import com.coffilation.app.data.CollectionData
 import com.coffilation.app.data.PointData
+import com.coffilation.app.data.UserData
 import com.coffilation.app.util.UseCaseResult
 import com.coffilation.app.view.item.CardAdapterItem
 import com.coffilation.app.view.item.DragHandleItem
@@ -33,8 +34,7 @@ class MainViewState(
 
         fun valueOf(
             mode: MainViewStateMode,
-            username: String,
-            userId: Long,
+            userData: UseCaseResult<UserData>?,
             publicCollections: UseCaseResult<List<CollectionData>>?,
             privateCollections: UseCaseResult<List<CollectionData>>?,
             lastAppliedSuggestion: String?,
@@ -46,13 +46,14 @@ class MainViewState(
             adapterItems.add(DragHandleItem())
             when (mode) {
                 MainViewStateMode.Collections -> {
-                    adapterItems.add(SearchButtonItem(username))
+                    val user = userData as? UseCaseResult.Success<UserData>
+                    adapterItems.add(SearchButtonItem(user?.data?.username))
                     if (
                         publicCollections is UseCaseResult.Success &&
                         privateCollections is UseCaseResult.Success
                     ) {
                         adapterItems.add(
-                            PublicCollectionsListItem(publicCollections.data.filter { it.author.id != userId })
+                            PublicCollectionsListItem(publicCollections.data.filter { it.author.id != user?.data?.id })
                         )
                         adapterItems.add(UserCollectionsHeaderItem())
                         if (privateCollections.data.isNotEmpty()) {

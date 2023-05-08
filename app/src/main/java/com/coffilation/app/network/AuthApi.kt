@@ -11,12 +11,12 @@ import retrofit2.http.POST
  */
 interface AuthApi {
 
-    @POST("auth/login")
+    @POST("auth/jwt/create/")
     suspend fun signIn(
         @Body signUpData: UserSignInData
     ): TokensResult
 
-    @POST("auth/refresh")
+    @POST("auth/jwt/refresh/")
     suspend fun refreshToken(
         @Body refreshTokenData: RefreshTokenData
     ): TokensResult

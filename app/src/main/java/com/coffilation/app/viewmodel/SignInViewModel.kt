@@ -1,15 +1,12 @@
 package com.coffilation.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.coffilation.app.data.UserSignInData
-import com.coffilation.app.data.UserSignUpData
-import com.coffilation.app.network.AuthRepository
 import com.coffilation.app.network.SignInRepository
-import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.storage.PrefRepository
 import com.coffilation.app.util.SingleLiveEvent
 import com.coffilation.app.util.UseCaseResult
+import com.coffilation.app.util.format
 
 /**
  * @author pvl-zolotov on 15.10.2022
@@ -27,21 +24,18 @@ class SignInViewModel(
             is UseCaseResult.Success -> {
                 prefRepository.putAccessToken(result.data.access)
                 prefRepository.putRefreshToken(result.data.refresh)
+                action.value = Action.ShowMainScreen
             }
             is UseCaseResult.Error -> {
-                action.value = Action.PasswordError
+                action.value = Action.ShowError(result.message?.format())
             }
         }
-    }
-
-    fun showMainScreen() {
-        action.value = Action.ShowMainScreen
     }
 
     sealed class Action {
 
         object ShowMainScreen : Action()
 
-        object PasswordError : Action()
+        class ShowError(val message: String?) : Action()
     }
 }

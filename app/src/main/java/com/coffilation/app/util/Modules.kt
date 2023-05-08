@@ -21,10 +21,10 @@ import com.coffilation.app.viewmodel.EditCollectionViewModel
 import com.coffilation.app.viewmodel.MainViewModel
 import com.coffilation.app.viewmodel.SignInViewModel
 import com.coffilation.app.viewmodel.SignUpViewModel
-import com.coffilation.app.viewmodel.UserViewModel
 import com.google.gson.GsonBuilder
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -44,7 +44,7 @@ val usersModule = module {
             baseUrl = API_BASE_URL
         )
     }
-    factory<UsersRepository> { UsersRepositoryImpl(usersApi = get()) }
+    factory<UsersRepository> { UsersRepositoryImpl(usersApi = get(), prefRepository = get()) }
     viewModel { SignUpViewModel(usersRepository = get()) }
 }
 
@@ -56,9 +56,8 @@ val signInModule = module {
         )
     }
     factory<SignInRepository> { SignInRepositoryImpl(authApi = get()) }
-    factory<UsersRepository> { UsersRepositoryImpl(usersApi = get()) }
+    factory<UsersRepository> { UsersRepositoryImpl(usersApi = get(), prefRepository = get()) }
     viewModel { SignInViewModel(signInRepository = get(), prefRepository = get()) }
-    viewModel { UserViewModel(usersRepository = get(), prefRepository = get()) }
 }
 
 val collectionsModule = module {
@@ -70,7 +69,7 @@ val collectionsModule = module {
     }
     factory<CollectionsRepository> { CollectionRepositoryImpl(collectionsApi = get()) }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
-    viewModel { MainViewModel(collectionsRepository = get(), searchRepository = get(), prefRepository = get()) }
+    viewModel { MainViewModel(collectionsRepository = get(), searchRepository = get(), usersRepository = get()) }
 }
 
 val searchModule = module {
@@ -107,7 +106,10 @@ inline fun <reified T> createWebService(okHttpClient: OkHttpClient, baseUrl: Str
 }
 
 fun createHttpClient(prefRepository: PrefRepository, authRepository: AuthRepository?): OkHttpClient {
+    val httpLoggingInterceptor = HttpLoggingInterceptor()
+    httpLoggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
     return OkHttpClient.Builder()
+        .addInterceptor(httpLoggingInterceptor)
         .authenticator { route, response ->
             val refreshToken = runBlocking {
                 prefRepository.getRefreshToken()
@@ -119,7 +121,7 @@ fun createHttpClient(prefRepository: PrefRepository, authRepository: AuthReposit
                 if (newTokens is UseCaseResult.Success) {
                     runBlocking { prefRepository.putAccessToken(newTokens.data.access) }
                     runBlocking { prefRepository.putRefreshToken(newTokens.data.refresh) }
-                    return@authenticator response.request().newBuilder()
+                    return@authenticator response.request.newBuilder()
                         .header("Authorization", "Bearer ${newTokens.data.access}")
                         .build()
                 }
@@ -131,7 +133,11 @@ fun createHttpClient(prefRepository: PrefRepository, authRepository: AuthReposit
                 prefRepository.getAccessToken()
             }
             val newRequest = chain.request().newBuilder()
-                .addHeader("Authorization", "Bearer $token")
+                .apply {
+                    if (token.isNotEmpty()) {
+                        addHeader("Authorization", "Bearer $token")
+                    }
+                }
                 .build()
             chain.proceed(newRequest)
         }

@@ -35,6 +35,6 @@ class SearchButtonItemDelegate(
         viewHolder: BindingViewHolder<ItemSearchButtonBinding>,
         payloads: List<Any>
     ) {
-        viewHolder.binding.userLetter.text = item.username.firstOrNull()?.toString() ?: "?"
+        viewHolder.binding.userLetter.text = item.username?.firstOrNull()?.toString() ?: "?"
     }
 }

@@ -5,5 +5,5 @@ package com.coffilation.app.util
  */
 sealed class UseCaseResult<out T : Any> {
     class Success<out T : Any>(val data: T) : UseCaseResult<T>()
-    class Error(val exception: Throwable) : UseCaseResult<Nothing>()
+    class Error(val exception: Throwable, val message: Array<String>? = null) : UseCaseResult<Nothing>()
 }

@@ -11,9 +11,6 @@
     <string name="username">Username</string>
     <string name="password">Password</string>
     <string name="repassword">Repeat your password</string>
-    <string name="password_error">Wrong login or password</string>
-    <string name="repassword_error">Passwords don\'t match</string>
-    <string name="login_error">This username is incorrect or already taken</string>
     <string name="sign_up_link">Don\'t have an account? <a href="/">Sign up</a></string>
     <string name="sign_in_link">Already have an account? <a href="/">Sign in</a></string>
 

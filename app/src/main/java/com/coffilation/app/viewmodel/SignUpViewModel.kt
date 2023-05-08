@@ -1,12 +1,11 @@
 package com.coffilation.app.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.coffilation.app.data.UserSignUpData
 import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.util.SingleLiveEvent
 import com.coffilation.app.util.UseCaseResult
-import retrofit2.HttpException
+import com.coffilation.app.util.format
 
 /**
  * @author pvl-zolotov on 15.10.2022
@@ -22,14 +21,7 @@ class SignUpViewModel(private val usersRepository: UsersRepository) : ViewModel(
                 action.value = Action.ShowSignInScreen
             }
             is UseCaseResult.Error -> {
-                if (
-                    result.exception is HttpException &&
-                    result.exception.response()?.errorBody()?.string()?.contains(passwordsErrorText) == true
-                ) {
-                    action.value = Action.RepasswordError
-                } else {
-                    action.value = Action.LoginError
-                }
+                action.value = Action.ShowError(result.message?.format())
             }
         }
     }
@@ -38,13 +30,6 @@ class SignUpViewModel(private val usersRepository: UsersRepository) : ViewModel(
 
         object ShowSignInScreen : Action()
 
-        object RepasswordError : Action()
-
-        object LoginError : Action()
-    }
-
-    companion object {
-
-        const val passwordsErrorText = "Passwords doesn't match"
+        class ShowError(val message: String?) : Action()
     }
 }

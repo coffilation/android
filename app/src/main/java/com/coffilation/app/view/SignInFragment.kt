@@ -14,7 +14,6 @@ import com.coffilation.app.data.UserSignInData
 import com.coffilation.app.databinding.FragmentSignInBinding
 import com.coffilation.app.util.changeUrlSpanClickAction
 import com.coffilation.app.viewmodel.SignInViewModel
-import com.coffilation.app.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.fragment.android.replace
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -26,7 +25,6 @@ class SignInFragment : Fragment() {
 
     private var binding: FragmentSignInBinding? = null
     private val signInViewModel: SignInViewModel by viewModel()
-    private val userViewModel: UserViewModel by viewModel()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -54,8 +52,12 @@ class SignInFragment : Fragment() {
 
         signInViewModel.action.observe(viewLifecycleOwner) {
             when (it) {
-                SignInViewModel.Action.PasswordError -> {
-                    Toast.makeText(requireContext(), R.string.password_error, Toast.LENGTH_LONG).show()
+                is SignInViewModel.Action.ShowError -> {
+                    if (it.message != null) {
+                        Toast.makeText(requireContext(), it.message, Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(requireContext(), R.string.error, Toast.LENGTH_LONG).show()
+                    }
                 }
                 SignInViewModel.Action.ShowMainScreen -> {
                     parentFragmentManager.commit {
@@ -74,8 +76,6 @@ class SignInFragment : Fragment() {
         )
         signInViewModel.viewModelScope.launch {
             signInViewModel.submit(userSignInData)
-            userViewModel.saveUserInfo()
-            signInViewModel.showMainScreen()
         }
     }
 }

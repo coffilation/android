@@ -53,11 +53,12 @@ class SignUpFragment : Fragment() {
 
         signUpViewModel.action.observe(viewLifecycleOwner) {
             when (it) {
-                SignUpViewModel.Action.RepasswordError -> {
-                    Toast.makeText(requireContext(), R.string.repassword_error, Toast.LENGTH_LONG).show()
-                }
-                SignUpViewModel.Action.LoginError -> {
-                    Toast.makeText(requireContext(), R.string.login_error, Toast.LENGTH_LONG).show()
+                is SignUpViewModel.Action.ShowError -> {
+                    if (it.message != null) {
+                        Toast.makeText(requireContext(), it.message, Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(requireContext(), R.string.error, Toast.LENGTH_LONG).show()
+                    }
                 }
                 SignUpViewModel.Action.ShowSignInScreen -> {
                     parentFragmentManager.commit {
