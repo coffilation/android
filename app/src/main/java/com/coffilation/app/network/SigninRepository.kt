@@ -1,8 +1,8 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.UserSignInData
-import com.coffilation.app.data.TokensResult
-import com.coffilation.app.data.UserSignInError
+import com.coffilation.app.models.UserSignInData
+import com.coffilation.app.models.TokensResult
+import com.coffilation.app.models.UserSignInError
 import com.coffilation.app.util.UseCaseResult
 import com.google.gson.Gson
 import retrofit2.HttpException

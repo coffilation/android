@@ -100,7 +100,7 @@ class MainFragment : Fragment(), MapObjectTapListener {
             LoadingItemDelegate(),
             ErrorItemDelegate(),
             EmptyItemDelegate(),
-            PublicCollectionsListItemDelegate({}),
+            PublicCollectionsListItemDelegate({}, viewModel::onPublicCollectionsListEndReached),
             UserCollectionsHeaderItemDelegate {
                 parentFragmentManager.commit {
                     setReorderingAllowed(true)

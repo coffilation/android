@@ -1,4 +1,4 @@
-package com.coffilation.app.data
+package com.coffilation.app.models
 
 /**
  * @author pvl-zolotov on 08.05.2023

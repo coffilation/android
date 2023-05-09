@@ -1,7 +1,7 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.RefreshTokenData
-import com.coffilation.app.data.TokensResult
+import com.coffilation.app.models.RefreshTokenData
+import com.coffilation.app.models.TokensResult
 import com.coffilation.app.util.UseCaseResult
 
 /**

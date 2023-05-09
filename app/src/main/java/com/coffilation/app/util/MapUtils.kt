@@ -1,6 +1,6 @@
 package com.coffilation.app.util
 
-import com.coffilation.app.data.PointData
+import com.coffilation.app.models.PointData
 import com.yandex.mapkit.ScreenPoint
 import com.yandex.mapkit.ScreenRect
 import com.yandex.mapkit.geometry.BoundingBox

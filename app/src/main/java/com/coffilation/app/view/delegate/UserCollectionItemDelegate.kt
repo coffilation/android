@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import com.coffilation.app.R
-import com.coffilation.app.data.CollectionData
+import com.coffilation.app.models.CollectionData
 import com.coffilation.app.databinding.ItemUserCollectionBinding
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.toDrawable

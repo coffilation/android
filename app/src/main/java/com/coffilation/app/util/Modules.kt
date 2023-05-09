@@ -1,6 +1,7 @@
 package com.coffilation.app.util
 
-import com.coffilation.app.data.RefreshTokenData
+import com.coffilation.app.domain.PublicCollectionsInteractor
+import com.coffilation.app.models.RefreshTokenData
 import com.coffilation.app.network.AuthApi
 import com.coffilation.app.network.AuthRepository
 import com.coffilation.app.network.AuthRepositoryImpl
@@ -68,8 +69,9 @@ val collectionsModule = module {
         )
     }
     factory<CollectionsRepository> { CollectionRepositoryImpl(collectionsApi = get()) }
+    factory { PublicCollectionsInteractor(collectionsRepository = get()) }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
-    viewModel { MainViewModel(collectionsRepository = get(), searchRepository = get(), usersRepository = get()) }
+    viewModel { MainViewModel(collectionsRepository = get(), publicCollectionsInteractor = get(), searchRepository = get(), usersRepository = get()) }
 }
 
 val searchModule = module {

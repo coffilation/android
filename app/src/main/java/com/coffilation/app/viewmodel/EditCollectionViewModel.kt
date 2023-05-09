@@ -2,7 +2,7 @@ package com.coffilation.app.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.coffilation.app.data.CollectionAddData
+import com.coffilation.app.models.CollectionAddData
 import com.coffilation.app.network.CollectionsRepository
 import com.coffilation.app.util.UseCaseResult
 

@@ -1,6 +1,6 @@
 package com.coffilation.app.view.item
 
-import com.coffilation.app.data.CollectionData
+import com.coffilation.app.models.CollectionData
 
 /**
  * @author pvl-zolotov on 25.11.2022

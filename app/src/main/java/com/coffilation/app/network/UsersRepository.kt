@@ -1,9 +1,9 @@
 package com.coffilation.app.network;
 
-import com.coffilation.app.data.UserData
-import com.coffilation.app.data.UserSignUpData
-import com.coffilation.app.data.UserSignUpError
-import com.coffilation.app.data.UserSignUpResult
+import com.coffilation.app.models.UserData
+import com.coffilation.app.models.UserSignUpData
+import com.coffilation.app.models.UserSignUpError
+import com.coffilation.app.models.UserSignUpResult
 import com.coffilation.app.storage.PrefRepository
 import com.coffilation.app.util.UseCaseResult
 import com.google.gson.Gson

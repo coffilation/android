@@ -5,13 +5,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.coffilation.app.data.CollectionData
-import com.coffilation.app.data.PointData
-import com.coffilation.app.data.SearchData
-import com.coffilation.app.data.UserData
+import com.coffilation.app.domain.PublicCollectionsInteractor
+import com.coffilation.app.domain.PublicCollectionsState
+import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.PointData
+import com.coffilation.app.models.SearchData
+import com.coffilation.app.models.UserData
 import com.coffilation.app.network.CollectionsRepository
 import com.coffilation.app.network.SearchRepository
 import com.coffilation.app.network.UsersRepository
+import com.coffilation.app.util.PAGE_SIZE
 import com.coffilation.app.util.UseCaseResult
 import com.coffilation.app.view.viewstate.MainViewState
 import com.yandex.mapkit.geometry.BoundingBox
@@ -39,6 +42,7 @@ import retrofit2.HttpException
 
 class MainViewModel(
     private val collectionsRepository: CollectionsRepository,
+    publicCollectionsInteractor: PublicCollectionsInteractor,
     private val searchRepository: SearchRepository,
     private val usersRepository: UsersRepository
 ) : ViewModel() {
@@ -46,9 +50,10 @@ class MainViewModel(
     private val searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED)
     private val suggestSession = searchManager.createSuggestSession()
 
+    private val publicCollectionsModel = publicCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
+
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
-    private val publicCollectionsFlow = MutableStateFlow<UseCaseResult<List<CollectionData>>?>(null)
     private val userCollectionsFlow = MutableStateFlow<UseCaseResult<List<CollectionData>>?>(null)
     private val searchQueryFlow = MutableStateFlow("")
     private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
@@ -59,7 +64,7 @@ class MainViewModel(
     private val viewStateFlow = combine(
         modeFlow,
         userDataFlow,
-        publicCollectionsFlow,
+        publicCollectionsModel.state,
         userCollectionsFlow,
         lastAppliedSuggestionFlow,
         searchSuggestionsFlow,
@@ -70,7 +75,7 @@ class MainViewModel(
         MainViewState.valueOf(
             data[0] as MainViewState.MainViewStateMode,
             data[1] as UseCaseResult<UserData>?,
-            data[2] as UseCaseResult<List<CollectionData>>?,
+            data[2] as PublicCollectionsState,
             data[3] as UseCaseResult<List<CollectionData>>?,
             data[4] as String?,
             data[5] as UseCaseResult<List<SuggestItem>>?,
@@ -87,6 +92,8 @@ class MainViewModel(
         viewModelScope.launch {
             userDataFlow.value = usersRepository.me()
         }
+
+        publicCollectionsModel.refresh.invoke()
 
         @OptIn(ExperimentalCoroutinesApi::class)
         searchQueryFlow.combine(
@@ -136,7 +143,6 @@ class MainViewModel(
         }.launchIn(viewModelScope)
 
         userDataFlow.filterIsInstance<UseCaseResult.Success<UserData>>().onEach { userData ->
-            publicCollectionsFlow.value = collectionsRepository.getPublicCollections()
             userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
         }.launchIn(viewModelScope)
     }
@@ -187,6 +193,10 @@ class MainViewModel(
     /*fun selectPoint(point: PointData) {
         selectedPointFlow.value = point
     }*/
+
+    fun onPublicCollectionsListEndReached() {
+        publicCollectionsModel.nextPage.invoke()
+    }
 
     sealed class Action {
 

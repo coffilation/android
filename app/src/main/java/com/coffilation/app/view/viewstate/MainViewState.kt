@@ -1,14 +1,17 @@
 package com.coffilation.app.view.viewstate
 
-import com.coffilation.app.data.CollectionData
-import com.coffilation.app.data.PointData
-import com.coffilation.app.data.UserData
+import com.coffilation.app.domain.PublicCollectionsState
+import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.PointData
+import com.coffilation.app.models.UserData
 import com.coffilation.app.util.UseCaseResult
+import com.coffilation.app.util.filterNonOwnCollections
 import com.coffilation.app.view.item.CardAdapterItem
 import com.coffilation.app.view.item.DragHandleItem
 import com.coffilation.app.view.item.EmptyItem
 import com.coffilation.app.view.item.ErrorItem
 import com.coffilation.app.view.item.LoadingItem
+import com.coffilation.app.view.item.PublicCollectionItem
 import com.coffilation.app.view.item.PublicCollectionsListItem
 import com.coffilation.app.view.item.SearchButtonItem
 import com.coffilation.app.view.item.SearchButtonWithNavigationItem
@@ -35,7 +38,7 @@ class MainViewState(
         fun valueOf(
             mode: MainViewStateMode,
             userData: UseCaseResult<UserData>?,
-            publicCollections: UseCaseResult<List<CollectionData>>?,
+            publicCollections: PublicCollectionsState,
             privateCollections: UseCaseResult<List<CollectionData>>?,
             lastAppliedSuggestion: String?,
             searchSuggestions: UseCaseResult<List<SuggestItem>>?,
@@ -48,7 +51,34 @@ class MainViewState(
                 MainViewStateMode.Collections -> {
                     val user = userData as? UseCaseResult.Success<UserData>
                     adapterItems.add(SearchButtonItem(user?.data?.username))
-                    if (
+                    when (publicCollections) {
+                        PublicCollectionsState.Initial -> {
+                            adapterItems.add(LoadingItem())
+                        }
+                        is PublicCollectionsState.Loading -> {
+                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
+                            val items = arrayListOf<CardAdapterItem<*>>()
+                            items.addAll(data.map { PublicCollectionItem(it) })
+                            items.add(LoadingItem())
+                            adapterItems.add(PublicCollectionsListItem(items, false))
+                        }
+                        is PublicCollectionsState.AllPagesLoaded -> {
+                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
+                            adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, false))
+                        }
+                        is PublicCollectionsState.CanLoadMore -> {
+                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
+                            adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, true))
+                        }
+                        is PublicCollectionsState.LoadingError -> {
+                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
+                            val items = arrayListOf<CardAdapterItem<*>>()
+                            items.addAll(data.map { PublicCollectionItem(it) })
+                            items.add(ErrorItem())
+                            adapterItems.add(PublicCollectionsListItem(items, false))
+                        }
+                    }
+                    /*if (
                         publicCollections is UseCaseResult.Success &&
                         privateCollections is UseCaseResult.Success
                     ) {
@@ -70,7 +100,7 @@ class MainViewState(
                         adapterItems.add(ErrorItem())
                     } else {
                         adapterItems.add(LoadingItem())
-                    }
+                    }*/
                     return MainViewState(
                         adapterItems,
                         BottomSheetConfig(BottomSheetState.PEEKED_COMPACT, BottomSheetState.FULLSCREEN),

@@ -1,8 +1,8 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.UserData
-import com.coffilation.app.data.UserSignUpData
-import com.coffilation.app.data.UserSignUpResult
+import com.coffilation.app.models.UserData
+import com.coffilation.app.models.UserSignUpData
+import com.coffilation.app.models.UserSignUpResult
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST

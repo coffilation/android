@@ -1,7 +1,7 @@
 package com.coffilation.app.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.coffilation.app.data.UserSignInData
+import com.coffilation.app.models.UserSignInData
 import com.coffilation.app.network.SignInRepository
 import com.coffilation.app.storage.PrefRepository
 import com.coffilation.app.util.SingleLiveEvent

@@ -2,7 +2,7 @@ package com.coffilation.app.view.delegate
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.coffilation.app.data.PointData
+import com.coffilation.app.models.PointData
 import com.coffilation.app.databinding.ItemSearchResultBinding
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.viewholder.BindingViewHolder

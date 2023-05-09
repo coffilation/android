@@ -4,9 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.PagerSnapHelper
-import com.coffilation.app.data.CollectionData
-import com.coffilation.app.data.PointData
-import com.coffilation.app.databinding.ItemDiscoveriesBinding
+import com.coffilation.app.models.PointData
 import com.coffilation.app.databinding.ItemSearchResultsListBinding
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.DataSourceAdapter
@@ -14,8 +12,6 @@ import com.coffilation.app.util.RatioLayoutManager
 import com.coffilation.app.util.data.ListDataSource
 import com.coffilation.app.util.viewholder.BindingViewHolder
 import com.coffilation.app.view.item.AdapterItem
-import com.coffilation.app.view.item.PublicCollectionItem
-import com.coffilation.app.view.item.PublicCollectionsListItem
 import com.coffilation.app.view.item.SearchResultItem
 import com.coffilation.app.view.item.SearchResultsListItem
 

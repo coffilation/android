@@ -11,10 +11,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.R
-import com.coffilation.app.data.CollectionAddData
-import com.coffilation.app.data.CollectionType
-import com.coffilation.app.data.ColorData
-import com.coffilation.app.data.GradientData
+import com.coffilation.app.models.CollectionAddData
+import com.coffilation.app.models.CollectionType
+import com.coffilation.app.models.ColorData
+import com.coffilation.app.models.GradientData
 import com.coffilation.app.databinding.FragmentEditCollectionBinding
 import com.coffilation.app.view.MainFragment.Companion.KEY_USER_COLLECTIONS_CHANGED
 import com.coffilation.app.view.MainFragment.Companion.REQUEST_KEY_EDIT_COLLECTION

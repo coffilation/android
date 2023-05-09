@@ -1,6 +1,6 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.PointData
+import com.coffilation.app.models.PointData
 import retrofit2.http.GET
 import retrofit2.http.Query
 

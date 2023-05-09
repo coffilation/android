@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import com.coffilation.app.R
-import com.coffilation.app.data.CollectionData
+import com.coffilation.app.models.CollectionData
 import com.coffilation.app.databinding.ItemDiscoveryBinding
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.toDrawable

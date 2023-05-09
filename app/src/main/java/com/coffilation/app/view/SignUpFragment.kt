@@ -10,10 +10,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.R
-import com.coffilation.app.data.UserSignUpData
+import com.coffilation.app.models.UserSignUpData
 import com.coffilation.app.databinding.FragmentSignUpBinding
 import com.coffilation.app.util.changeUrlSpanClickAction
-import com.coffilation.app.viewmodel.SignInViewModel
 import com.coffilation.app.viewmodel.SignUpViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.fragment.android.replace

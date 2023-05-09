@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.R
-import com.coffilation.app.data.UserSignInData
+import com.coffilation.app.models.UserSignInData
 import com.coffilation.app.databinding.FragmentSignInBinding
 import com.coffilation.app.util.changeUrlSpanClickAction
 import com.coffilation.app.viewmodel.SignInViewModel

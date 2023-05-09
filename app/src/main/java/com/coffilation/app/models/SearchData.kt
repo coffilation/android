@@ -1,4 +1,4 @@
-package com.coffilation.app.data
+package com.coffilation.app.models
 
 import com.yandex.mapkit.geometry.BoundingBox
 

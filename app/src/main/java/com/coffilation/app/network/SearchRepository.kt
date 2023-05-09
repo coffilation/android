@@ -1,7 +1,7 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.PointData
-import com.coffilation.app.data.SearchData
+import com.coffilation.app.models.PointData
+import com.coffilation.app.models.SearchData
 import com.coffilation.app.util.UseCaseResult
 
 /**

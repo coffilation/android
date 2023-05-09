@@ -2,16 +2,10 @@ package com.coffilation.app.view.delegate
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.res.ResourcesCompat
-import com.coffilation.app.R
-import com.coffilation.app.data.CollectionData
-import com.coffilation.app.databinding.ItemDiscoveryBinding
 import com.coffilation.app.databinding.ItemSearchSuggestionBinding
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
-import com.coffilation.app.util.toDrawable
 import com.coffilation.app.util.viewholder.BindingViewHolder
 import com.coffilation.app.view.item.AdapterItem
-import com.coffilation.app.view.item.PublicCollectionItem
 import com.coffilation.app.view.item.SearchSuggestionItem
 import com.yandex.mapkit.search.SuggestItem
 

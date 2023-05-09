@@ -1,4 +1,4 @@
-package com.coffilation.app.data
+package com.coffilation.app.models
 
 import androidx.annotation.ColorInt
 import androidx.core.graphics.blue

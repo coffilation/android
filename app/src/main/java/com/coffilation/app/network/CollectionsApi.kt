@@ -1,8 +1,9 @@
 package com.coffilation.app.network
 
-import com.coffilation.app.data.CollectionAddData
-import com.coffilation.app.data.CollectionAddResult
-import com.coffilation.app.data.CollectionData
+import com.coffilation.app.models.CollectionAddData
+import com.coffilation.app.models.CollectionAddResult
+import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.CollectionList
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -24,5 +25,8 @@ interface CollectionsApi {
     ): List<CollectionData>
 
     @GET("compilations/")
-    suspend fun getPublicCollections(): List<CollectionData>
+    suspend fun getPublicCollections(
+        @Query("limit") pageSize: Int,
+        @Query("offset") offset: Int,
+    ): CollectionList
 }

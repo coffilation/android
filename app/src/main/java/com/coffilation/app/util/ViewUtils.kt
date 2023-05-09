@@ -9,9 +9,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.View
 import android.view.inputmethod.InputMethodManager
-import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
-import com.coffilation.app.data.GradientData
+import com.coffilation.app.models.GradientData
 
 /**
  * @author pvl-zolotov on 27.11.2022
