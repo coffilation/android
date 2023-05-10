@@ -37,17 +37,17 @@ sealed interface PublicCollectionsState {
             state: Loading,
             collectionList: CollectionList
         ): PublicCollectionsState {
-            val canLoadMore = collectionList.collections.isNotEmpty() &&
-                state.collections.size + collectionList.collections.size < collectionList.count
+            val canLoadMore = collectionList.results.isNotEmpty() &&
+                state.collections.size + collectionList.results.size < collectionList.count
             return if (canLoadMore) {
                 CanLoadMore(
                     state.currentPage,
-                    state.collections + collectionList.collections
+                    state.collections + collectionList.results
                 )
             } else {
                 AllPagesLoaded(
                     state.currentPage,
-                    state.collections + collectionList.collections
+                    state.collections + collectionList.results
                 )
             }
         }

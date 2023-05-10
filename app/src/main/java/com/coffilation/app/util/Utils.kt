@@ -15,7 +15,7 @@ inline fun <reified Expected> wrongTypeMessage(value: Any): String {
 }
 
 fun List<CollectionData>.filterNonOwnCollections(user: UserData?): List<CollectionData> {
-    return filter { it.author.id != user?.id }
+    return filter { it.owner.id != user?.id }
 }
 
 const val PAGE_SIZE = 10

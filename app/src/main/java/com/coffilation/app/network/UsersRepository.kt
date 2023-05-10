@@ -1,4 +1,4 @@
-package com.coffilation.app.network;
+package com.coffilation.app.network
 
 import com.coffilation.app.models.UserData
 import com.coffilation.app.models.UserSignUpData
@@ -45,6 +45,6 @@ class UsersRepositoryImpl(private val usersApi: UsersApi, private val prefReposi
     }
 
     override suspend fun isAuthenticationSaved(): Boolean {
-        return prefRepository.getAccessToken().isNotEmpty()
+        return prefRepository.getRefreshToken().isNotEmpty()
     }
 }

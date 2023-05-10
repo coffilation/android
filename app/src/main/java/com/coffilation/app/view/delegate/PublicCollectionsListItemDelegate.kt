@@ -3,6 +3,7 @@ package com.coffilation.app.view.delegate
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.coffilation.app.databinding.ItemDiscoveriesBinding
 import com.coffilation.app.models.CollectionData
 import com.coffilation.app.util.DataSourceAdapter
@@ -18,13 +19,13 @@ import com.coffilation.app.view.item.PublicCollectionsListItem
  */
 class PublicCollectionsListItemDelegate(
     onCollectionClick: (CollectionData) -> Unit,
-    private val onListEndReached: () -> Unit
+    onListEndReached: () -> Unit
 ) : BindingAdapterDelegate<PublicCollectionsListItem, AdapterItem, ItemDiscoveriesBinding>(
     PublicCollectionsListItem::class.java,
     ItemDiscoveriesBinding::inflate
 ) {
 
-    private lateinit var autoLoadingListener: OnBottomReachedListener
+    private var autoLoadingListener = OnBottomReachedListener(3, onListEndReached)
 
     private val adapter = DataSourceAdapter(
         PublicCollectionItemDelegate(onCollectionClick),
@@ -39,8 +40,12 @@ class PublicCollectionsListItemDelegate(
         return super.onCreateViewHolder(inflater, parent).apply {
             binding.recyclerView.adapter = adapter
             binding.recyclerView.setHasFixedSize(true)
-            autoLoadingListener = OnBottomReachedListener(3, onListEndReached)
             binding.recyclerView.addOnScrollListener(autoLoadingListener)
+            binding.recyclerView.layoutManager = LinearLayoutManager(
+                binding.root.context,
+                RecyclerView.HORIZONTAL,
+                false
+            )
         }
     }
 
@@ -50,11 +55,6 @@ class PublicCollectionsListItemDelegate(
         payloads: List<Any>
     ) {
         val binding = viewHolder.binding
-        binding.recyclerView.layoutManager = LinearLayoutManager(
-            binding.root.context,
-            LinearLayoutManager.HORIZONTAL,
-            false
-        )
         adapter.data = ListDataSource(item.items)
         adapter.notifyDataSetChanged()
         autoLoadingListener.reset(item.autoLoadingEnabled)

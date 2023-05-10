@@ -7,7 +7,7 @@ data class CollectionData(
     val id: Long,
     val name: String,
     val description: String?,
-    val author: UserData,
+    val owner: UserData,
     val type: CollectionType,
     val gradient: GradientData?
 )
