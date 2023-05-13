@@ -63,6 +63,7 @@ class MainFragment : Fragment(), MapObjectTapListener {
     private val viewModel: MainViewModel by viewModel()
 
     private var bottomSheetCallback: BottomSheetBehavior.BottomSheetCallback? = null
+    private lateinit var autoLoadingListener: OnEndReachedListener
 
     private lateinit var dataSource: AsyncListDifferDataSource<AdapterItem>
     private var bottomSheetConfig: MainViewState.BottomSheetConfig? = null
@@ -126,10 +127,13 @@ class MainFragment : Fragment(), MapObjectTapListener {
             },
             SearchResultsListItemDelegate({})
         )
+        autoLoadingListener = OnEndReachedListener(3, viewModel::onUserCollectionsListEndReached)
+
         binding?.recyclerView?.apply {
             layoutManager = LinearLayoutManager(context)
             itemAnimator = DefaultItemAnimator()
             adapter = dataAdapter
+            addOnScrollListener(autoLoadingListener)
         }
         dataSource = AsyncListDifferDataSource.createFor(dataAdapter)
         dataAdapter.data = dataSource
@@ -187,7 +191,11 @@ class MainFragment : Fragment(), MapObjectTapListener {
         }
 
         viewModel.viewState.observe(viewLifecycleOwner) { state ->
-            dataSource.setItems(state.items)
+            dataSource.items = state.items
+            binding?.recyclerView?.adapter?.notifyDataSetChanged()
+            autoLoadingListener.reset(state.autoLoadingEnabled)
+            binding?.recyclerView?.addOnLayoutChangeListener(autoLoadingListener)
+
             bottomSheetConfig = state.bottomSheetConfig
 
             if (!state.allowShowKeyboard) {

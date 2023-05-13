@@ -8,6 +8,16 @@ data class CollectionData(
     val name: String,
     val description: String?,
     val owner: UserData,
-    val type: CollectionType,
-    val gradient: GradientData?
-)
+    val isPrivate: Boolean,
+    val primaryColor: String?,
+    val secondaryColor: String?,
+) {
+
+    fun getGradientData(): GradientData? {
+        return if (!primaryColor.isNullOrEmpty() && !secondaryColor.isNullOrEmpty()) {
+            GradientData(primaryColor, secondaryColor)
+        } else {
+            null
+        }
+    }
+}

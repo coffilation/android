@@ -5,7 +5,27 @@ package com.coffilation.app.models
  */
 data class CollectionAddData(
     val name: String,
-    val description: String,
-    val type: CollectionType,
-    val gradient: GradientData
-)
+    val description: String?,
+    val isPrivate: Boolean,
+    val primaryColor: String?,
+    val secondaryColor: String?,
+) {
+
+    companion object {
+
+        fun newInstance(
+            name: String,
+            description: String?,
+            isPrivate: Boolean,
+            gradientData: GradientData?
+        ): CollectionAddData {
+            return CollectionAddData(
+                name,
+                description,
+                isPrivate,
+                gradientData?.startColor,
+                gradientData?.endColor
+            )
+        }
+    }
+}

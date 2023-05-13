@@ -9,7 +9,7 @@ import retrofit2.http.Query
  */
 interface SearchApi {
 
-    @GET("search/")
+    @GET("/nominatim/search/")
     suspend fun search(
         @Query("viewbox") viewbox: String,
         @Query("q") query: String

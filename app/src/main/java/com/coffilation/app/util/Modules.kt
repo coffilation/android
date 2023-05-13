@@ -37,7 +37,6 @@ import retrofit2.converter.gson.GsonConverterFactory
  * @author pvl-zolotov on 15.10.2022
  */
 const val API_BASE_URL = "https://backend.test.coffilation.ru/"
-const val API_SEARCH_BASE_URL = "https://search.test.coffilation.ru/"
 
 val usersModule = module {
     single {
@@ -70,16 +69,21 @@ val collectionsModule = module {
         )
     }
     factory<CollectionsRepository> { CollectionRepositoryImpl(collectionsApi = get()) }
-    factory {
+    factory(named("publicCollections")) {
         BasicStateInteractor { page: Int, pageSize: Int, userId: Long ->
             get<CollectionsRepository>().getPublicCollections(page, pageSize, userId)
+        }
+    }
+    factory(named("userCollections")) {
+        BasicStateInteractor { page: Int, pageSize: Int, userId: Long ->
+            get<CollectionsRepository>().getUserCollections(page, pageSize, userId)
         }
     }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
     viewModel {
         MainViewModel(
-            collectionsRepository = get(),
-            publicCollectionsInteractor = get(),
+            publicCollectionsInteractor = get(named("publicCollections")),
+            userCollectionsInteractor = get(named("userCollections")),
             searchRepository = get(),
             usersRepository = get()
         )
@@ -90,7 +94,7 @@ val searchModule = module {
     single {
         createWebService<SearchApi>(
             okHttpClient = createHttpClient(prefRepository = get(), authRepository = get()),
-            baseUrl = API_SEARCH_BASE_URL
+            baseUrl = API_BASE_URL
         )
     }
     factory<SearchRepository> { SearchRepositoryImpl(searchApi = get()) }

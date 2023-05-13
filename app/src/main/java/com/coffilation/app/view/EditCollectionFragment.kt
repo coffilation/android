@@ -12,10 +12,9 @@ import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.viewModelScope
 import com.coffilation.app.R
 import com.coffilation.app.models.CollectionAddData
-import com.coffilation.app.models.CollectionType
-import com.coffilation.app.models.ColorData
 import com.coffilation.app.models.GradientData
 import com.coffilation.app.databinding.FragmentEditCollectionBinding
+import com.coffilation.app.util.toColorHexString
 import com.coffilation.app.view.MainFragment.Companion.KEY_USER_COLLECTIONS_CHANGED
 import com.coffilation.app.view.MainFragment.Companion.REQUEST_KEY_EDIT_COLLECTION
 import com.coffilation.app.viewmodel.EditCollectionViewModel
@@ -49,15 +48,16 @@ class EditCollectionFragment : Fragment() {
             }
             toolbar.title = ""
             buttonDone.setOnClickListener {
-                val collectionAddData = CollectionAddData(
+                val gradient = getGradient(this)
+                val collectionAddData = CollectionAddData.newInstance(
                     name = title.text.toString(),
-                    type = when (accessSwitch.checkedButtonId) {
-                        R.id.button_public -> CollectionType.PUBLIC
-                        R.id.button_private -> CollectionType.PRIVATE
+                    isPrivate = when (accessSwitch.checkedButtonId) {
+                        R.id.button_public -> false
+                        R.id.button_private -> true
                         else -> throw IllegalArgumentException("Unexpected view id")
                     },
-                    description = description.text.toString(),
-                    gradient = getGradient(this)
+                    description = description.text.toString().takeIf { it.isNotEmpty() },
+                    gradientData = gradient
                 )
                 viewModel.viewModelScope.launch {
                     viewModel.addCollection(collectionAddData)
@@ -68,29 +68,29 @@ class EditCollectionFragment : Fragment() {
         }
     }
 
-    private fun getGradient(binding: FragmentEditCollectionBinding): GradientData {
+    private fun getGradient(binding: FragmentEditCollectionBinding): GradientData? {
         return when (binding.colorPicker.checkedRadioButtonId) {
             R.id.gradient_red -> GradientData(
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_red_start)),
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_red_end))
+                ContextCompat.getColor(requireContext(), R.color.gradient_red_start).toColorHexString(),
+                ContextCompat.getColor(requireContext(), R.color.gradient_red_end).toColorHexString()
             )
             R.id.gradient_yellow -> GradientData(
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_yellow_start)),
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_yellow_end))
+                ContextCompat.getColor(requireContext(), R.color.gradient_yellow_start).toColorHexString(),
+                ContextCompat.getColor(requireContext(), R.color.gradient_yellow_end).toColorHexString()
             )
             R.id.gradient_green -> GradientData(
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_green_start)),
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_green_end))
+                ContextCompat.getColor(requireContext(), R.color.gradient_green_start).toColorHexString(),
+                ContextCompat.getColor(requireContext(), R.color.gradient_green_end).toColorHexString()
             )
             R.id.gradient_blue -> GradientData(
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_blue_start)),
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_blue_end))
+                ContextCompat.getColor(requireContext(), R.color.gradient_blue_start).toColorHexString(),
+                ContextCompat.getColor(requireContext(), R.color.gradient_blue_end).toColorHexString()
             )
             R.id.gradient_violet -> GradientData(
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_violet_start)),
-                ColorData.newInstance(ContextCompat.getColor(requireContext(), R.color.gradient_violet_end))
+                ContextCompat.getColor(requireContext(), R.color.gradient_violet_start).toColorHexString(),
+                ContextCompat.getColor(requireContext(), R.color.gradient_violet_end).toColorHexString()
             )
-            else -> throw IllegalArgumentException("Unexpected view id")
+            else -> null
         }
     }
 }

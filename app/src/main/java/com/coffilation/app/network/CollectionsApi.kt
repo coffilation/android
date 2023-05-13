@@ -21,8 +21,10 @@ interface CollectionsApi {
 
     @GET("compilations/?is_private=true")
     suspend fun getUserCollections(
-        @Query("compilationmembership_user") userId: Long
-    ): List<CollectionData>
+        @Query("limit") pageSize: Int,
+        @Query("offset") offset: Int,
+        @Query("compilationmembership_user") userId: Long,
+    ): BasicList<CollectionData>
 
     @GET("compilations/?is_private=false")
     suspend fun getPublicCollections(

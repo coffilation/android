@@ -38,10 +38,10 @@ class PublicCollectionItemDelegate(
         viewHolder: BindingViewHolder<ItemDiscoveryBinding>,
         payloads: List<Any>
     ) {
-        viewHolder.setBoundData(item.collection)
-        viewHolder.binding.title.text = item.collection.name
-        viewHolder.binding.cardBackground.background =
-            item.collection.gradient?.toDrawable() ?:
-            ResourcesCompat.getDrawable(viewHolder.itemView.resources, R.drawable.gradient_yellow_shape, null)
+        val collection = item.collection
+        viewHolder.setBoundData(collection)
+        viewHolder.binding.title.text = collection.name
+        val gradientData = collection.getGradientData()
+        viewHolder.binding.cardBackground.background = gradientData.toDrawable(viewHolder.itemView.resources)
     }
 }

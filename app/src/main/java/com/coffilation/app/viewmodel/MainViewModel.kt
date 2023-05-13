@@ -41,8 +41,8 @@ import retrofit2.HttpException
 
 
 class MainViewModel(
-    private val collectionsRepository: CollectionsRepository,
     publicCollectionsInteractor: BasicStateInteractor<CollectionData, Long>,
+    userCollectionsInteractor: BasicStateInteractor<CollectionData, Long>,
     private val searchRepository: SearchRepository,
     private val usersRepository: UsersRepository
 ) : ViewModel() {
@@ -51,10 +51,10 @@ class MainViewModel(
     private val suggestSession = searchManager.createSuggestSession()
 
     private val publicCollectionsModel = publicCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
+    private val userCollectionsModel = userCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
 
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
-    private val userCollectionsFlow = MutableStateFlow<UseCaseResult<List<CollectionData>>?>(null)
     private val searchQueryFlow = MutableStateFlow("")
     private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
@@ -63,9 +63,9 @@ class MainViewModel(
 
     private val viewStateFlow = combine(
         modeFlow,
-        userDataFlow,
+        userDataFlow.filterNotNull(),
         publicCollectionsModel.state,
-        userCollectionsFlow,
+        userCollectionsModel.state,
         lastAppliedSuggestionFlow,
         searchSuggestionsFlow,
         searchResultsFlow,
@@ -74,9 +74,9 @@ class MainViewModel(
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
             data[0] as MainViewState.MainViewStateMode,
-            data[1] as UseCaseResult<UserData>?,
+            data[1] as UseCaseResult<UserData>,
             data[2] as BasicState<CollectionData>,
-            data[3] as UseCaseResult<List<CollectionData>>?,
+            data[3] as BasicState<CollectionData>,
             data[4] as String?,
             data[5] as UseCaseResult<List<SuggestItem>>?,
             data[6] as UseCaseResult<List<PointData>>?,
@@ -142,7 +142,7 @@ class MainViewModel(
 
         userDataFlow.filterIsInstance<UseCaseResult.Success<UserData>>().onEach { userData ->
             publicCollectionsModel.refresh.invoke(userData.data.id)
-            userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
+            userCollectionsModel.refresh.invoke(userData.data.id)
         }.launchIn(viewModelScope)
     }
 
@@ -150,7 +150,7 @@ class MainViewModel(
         viewModelScope.launch {
             val userData = userDataFlow.value
             if (userData is UseCaseResult.Success<UserData>) {
-                userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
+                userCollectionsModel.refresh.invoke(userData.data.id)
             }
         }
     }
@@ -201,10 +201,10 @@ class MainViewModel(
                 }
             }
             MainViewState.TYPE_PUBLIC_COLLECTIONS -> {
-                val userData = userDataFlow.value
-                if (userData is UseCaseResult.Success<UserData>) {
-                    publicCollectionsModel.retry.invoke(userData.data.id)
-                }
+                onPublicCollectionsListRetryPressed()
+            }
+            MainViewState.TYPE_USER_COLLECTIONS -> {
+                onUserCollectionsListRetryPressed()
             }
         }
     }
@@ -220,6 +220,20 @@ class MainViewModel(
         val userData = userDataFlow.value
         if (userData is UseCaseResult.Success<UserData>) {
             publicCollectionsModel.retry.invoke(userData.data.id)
+        }
+    }
+
+    fun onUserCollectionsListEndReached() {
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            userCollectionsModel.nextPage.invoke(userData.data.id)
+        }
+    }
+
+    private fun onUserCollectionsListRetryPressed() {
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            userCollectionsModel.retry.invoke(userData.data.id)
         }
     }
 

@@ -13,7 +13,7 @@ interface CollectionsRepository {
 
     suspend fun addCollection(collectionAddData: CollectionAddData): UseCaseResult<CollectionAddResult>
 
-    suspend fun getUserCollections(userId: Long): UseCaseResult<List<CollectionData>>
+    suspend fun getUserCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>>
 
     suspend fun getPublicCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>>
 }
@@ -29,9 +29,9 @@ class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : Col
         }
     }
 
-    override suspend fun getUserCollections(userId: Long): UseCaseResult<List<CollectionData>> {
+    override suspend fun getUserCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>> {
         return try {
-            val result = collectionsApi.getUserCollections(userId)
+            val result = collectionsApi.getUserCollections(pageSize, pageSize * page, userId)
             UseCaseResult.Success(result)
         } catch (ex: Exception) {
             UseCaseResult.Error(ex)

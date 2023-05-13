@@ -2,11 +2,9 @@ package com.coffilation.app.view.delegate
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
-import com.coffilation.app.R
-import com.coffilation.app.models.CollectionData
 import com.coffilation.app.databinding.ItemUserCollectionBinding
+import com.coffilation.app.models.CollectionData
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.toDrawable
 import com.coffilation.app.util.viewholder.BindingViewHolder
@@ -39,14 +37,13 @@ class UserCollectionItemDelegate(
         viewHolder: BindingViewHolder<ItemUserCollectionBinding>,
         payloads: List<Any>
     ) {
-        viewHolder.setBoundData(item.collection)
-        viewHolder.binding.title.text = item.collection.name
-        val description = item.collection.description
+        val collection = item.collection
+        viewHolder.binding.title.text = collection.name
+        val description = collection.description
         viewHolder.binding.description.isVisible = description?.isNotEmpty() == true
         viewHolder.binding.description.text = description
-        viewHolder.binding.collectionPic.text = item.collection.name.first().toString()
-        viewHolder.binding.cardBackground.background =
-            item.collection.gradient?.toDrawable() ?:
-                ResourcesCompat.getDrawable(viewHolder.itemView.resources, R.drawable.gradient_yellow_shape, null)
+        viewHolder.binding.collectionPic.text = collection.name.first().toString()
+        val gradientData = collection.getGradientData()
+        viewHolder.binding.cardBackground.background = gradientData.toDrawable(viewHolder.itemView.resources)
     }
 }

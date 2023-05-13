@@ -9,19 +9,31 @@ import android.graphics.drawable.GradientDrawable
 import android.util.TypedValue
 import android.view.View
 import android.view.inputmethod.InputMethodManager
+import androidx.annotation.ColorInt
+import androidx.core.content.res.ResourcesCompat
+import com.coffilation.app.R
 import com.coffilation.app.models.GradientData
+import okhttp3.internal.toHexString
 
 /**
  * @author pvl-zolotov on 27.11.2022
  */
-fun GradientData.toDrawable(): Drawable {
-    return GradientDrawable(
-        GradientDrawable.Orientation.BL_TR,
-        intArrayOf(
-            Color.rgb(startColor.red, startColor.green, startColor.blue),
-            Color.rgb(endColor.red, endColor.green, endColor.blue),
+fun GradientData?.toDrawable(resources: Resources): Drawable {
+    return if (this != null) {
+        GradientDrawable(
+            GradientDrawable.Orientation.BL_TR,
+            intArrayOf(
+                Color.parseColor(startColor),
+                Color.parseColor(endColor),
+            )
         )
-    )
+    } else {
+        requireNotNull(ResourcesCompat.getDrawable(resources, R.drawable.gradient_yellow_shape, null))
+    }
+}
+
+fun @receiver:ColorInt Int.toColorHexString(): String {
+    return "#${toHexString().substring(2)}"
 }
 
 fun hideKeyboard(view: View) {
