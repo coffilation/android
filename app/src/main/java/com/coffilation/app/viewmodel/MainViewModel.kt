@@ -5,8 +5,8 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
-import com.coffilation.app.domain.PublicCollectionsInteractor
-import com.coffilation.app.domain.PublicCollectionsState
+import com.coffilation.app.domain.BasicState
+import com.coffilation.app.domain.BasicStateInteractor
 import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.models.SearchData
@@ -42,7 +42,7 @@ import retrofit2.HttpException
 
 class MainViewModel(
     private val collectionsRepository: CollectionsRepository,
-    publicCollectionsInteractor: PublicCollectionsInteractor,
+    publicCollectionsInteractor: BasicStateInteractor<CollectionData, Long>,
     private val searchRepository: SearchRepository,
     private val usersRepository: UsersRepository
 ) : ViewModel() {
@@ -75,7 +75,7 @@ class MainViewModel(
         MainViewState.valueOf(
             data[0] as MainViewState.MainViewStateMode,
             data[1] as UseCaseResult<UserData>?,
-            data[2] as PublicCollectionsState,
+            data[2] as BasicState<CollectionData>,
             data[3] as UseCaseResult<List<CollectionData>>?,
             data[4] as String?,
             data[5] as UseCaseResult<List<SuggestItem>>?,
@@ -92,8 +92,6 @@ class MainViewModel(
         viewModelScope.launch {
             userDataFlow.value = usersRepository.me()
         }
-
-        publicCollectionsModel.refresh.invoke()
 
         @OptIn(ExperimentalCoroutinesApi::class)
         searchQueryFlow.combine(
@@ -143,6 +141,7 @@ class MainViewModel(
         }.launchIn(viewModelScope)
 
         userDataFlow.filterIsInstance<UseCaseResult.Success<UserData>>().onEach { userData ->
+            publicCollectionsModel.refresh.invoke(userData.data.id)
             userCollectionsFlow.value = collectionsRepository.getUserCollections(userData.data.id)
         }.launchIn(viewModelScope)
     }
@@ -194,8 +193,34 @@ class MainViewModel(
         selectedPointFlow.value = point
     }*/
 
+    fun onRetryPressed(id: Int) {
+        when (id) {
+            MainViewState.TYPE_USER -> {
+                viewModelScope.launch {
+                    userDataFlow.value = usersRepository.me()
+                }
+            }
+            MainViewState.TYPE_PUBLIC_COLLECTIONS -> {
+                val userData = userDataFlow.value
+                if (userData is UseCaseResult.Success<UserData>) {
+                    publicCollectionsModel.retry.invoke(userData.data.id)
+                }
+            }
+        }
+    }
+
     fun onPublicCollectionsListEndReached() {
-        publicCollectionsModel.nextPage.invoke()
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            publicCollectionsModel.nextPage.invoke(userData.data.id)
+        }
+    }
+
+    fun onPublicCollectionsListRetryPressed() {
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            publicCollectionsModel.retry.invoke(userData.data.id)
+        }
     }
 
     sealed class Action {

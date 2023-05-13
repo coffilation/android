@@ -1,63 +1,36 @@
 package com.coffilation.app.view.delegate
 
-import android.view.LayoutInflater
-import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.coffilation.app.databinding.ItemDiscoveriesBinding
 import com.coffilation.app.models.CollectionData
-import com.coffilation.app.util.DataSourceAdapter
-import com.coffilation.app.util.OnBottomReachedListener
-import com.coffilation.app.util.data.ListDataSource
-import com.coffilation.app.util.delegate.BindingAdapterDelegate
-import com.coffilation.app.util.viewholder.BindingViewHolder
+import com.coffilation.app.util.OnEndReachedListener
+import com.coffilation.app.util.delegate.BaseBindingAdapterDelegate
 import com.coffilation.app.view.item.AdapterItem
 import com.coffilation.app.view.item.PublicCollectionsListItem
+import com.coffilation.app.view.viewholder.PublicCollectionListViewHolder
 
 /**
  * @author pvl-zolotov on 26.11.2022
  */
 class PublicCollectionsListItemDelegate(
     onCollectionClick: (CollectionData) -> Unit,
-    onListEndReached: () -> Unit
-) : BindingAdapterDelegate<PublicCollectionsListItem, AdapterItem, ItemDiscoveriesBinding>(
+    onRetryClick: () -> Unit,
+    autoLoadingListener: OnEndReachedListener,
+) : BaseBindingAdapterDelegate<PublicCollectionsListItem, AdapterItem, ItemDiscoveriesBinding, PublicCollectionListViewHolder>(
     PublicCollectionsListItem::class.java,
-    ItemDiscoveriesBinding::inflate
+    ItemDiscoveriesBinding::inflate,
+    { binding -> PublicCollectionListViewHolder(binding, onCollectionClick, onRetryClick, autoLoadingListener) }
 ) {
-
-    private var autoLoadingListener = OnBottomReachedListener(3, onListEndReached)
-
-    private val adapter = DataSourceAdapter(
-        PublicCollectionItemDelegate(onCollectionClick),
-        ErrorHorizontalItemDelegate(),
-        LoadingHorizontalItemDelegate()
-    )
-
-    override fun onCreateViewHolder(
-        inflater: LayoutInflater,
-        parent: ViewGroup
-    ): BindingViewHolder<ItemDiscoveriesBinding> {
-        return super.onCreateViewHolder(inflater, parent).apply {
-            binding.recyclerView.adapter = adapter
-            binding.recyclerView.setHasFixedSize(true)
-            binding.recyclerView.addOnScrollListener(autoLoadingListener)
-            binding.recyclerView.layoutManager = LinearLayoutManager(
-                binding.root.context,
-                RecyclerView.HORIZONTAL,
-                false
-            )
-        }
-    }
 
     override fun onBindViewHolder(
         item: PublicCollectionsListItem,
-        viewHolder: BindingViewHolder<ItemDiscoveriesBinding>,
+        viewHolder: PublicCollectionListViewHolder,
         payloads: List<Any>
     ) {
-        val binding = viewHolder.binding
-        adapter.data = ListDataSource(item.items)
-        adapter.notifyDataSetChanged()
-        autoLoadingListener.reset(item.autoLoadingEnabled)
-        binding.recyclerView.addOnLayoutChangeListener(autoLoadingListener)
+        viewHolder.bind(item)
+    }
+
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        (holder as PublicCollectionListViewHolder).unbind()
     }
 }

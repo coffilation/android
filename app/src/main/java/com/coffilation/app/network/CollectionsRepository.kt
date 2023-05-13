@@ -1,9 +1,9 @@
 package com.coffilation.app.network
 
+import com.coffilation.app.models.BasicList
 import com.coffilation.app.models.CollectionAddData
 import com.coffilation.app.models.CollectionAddResult
 import com.coffilation.app.models.CollectionData
-import com.coffilation.app.models.CollectionList
 import com.coffilation.app.util.UseCaseResult
 
 /**
@@ -15,7 +15,7 @@ interface CollectionsRepository {
 
     suspend fun getUserCollections(userId: Long): UseCaseResult<List<CollectionData>>
 
-    suspend fun getPublicCollections(page: Int, pageSize: Int): UseCaseResult<CollectionList>
+    suspend fun getPublicCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>>
 }
 
 class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : CollectionsRepository {
@@ -38,9 +38,9 @@ class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : Col
         }
     }
 
-    override suspend fun getPublicCollections(page: Int, pageSize: Int): UseCaseResult<CollectionList> {
+    override suspend fun getPublicCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>> {
         return try {
-            val result = collectionsApi.getPublicCollections(pageSize, pageSize * page)
+            val result = collectionsApi.getPublicCollections(pageSize, pageSize * page, userId)
             UseCaseResult.Success(result)
         } catch (ex: Exception) {
             UseCaseResult.Error(ex)

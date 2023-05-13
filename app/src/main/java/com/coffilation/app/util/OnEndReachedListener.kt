@@ -7,7 +7,7 @@ import androidx.recyclerview.widget.RecyclerView
 /**
  * @author pvl-zolotov on 10.05.2023
  */
-class OnBottomReachedListener(
+class OnEndReachedListener(
     private val offset: Int,
     private val action: () -> Unit
 ) : RecyclerView.OnScrollListener(), View.OnLayoutChangeListener {

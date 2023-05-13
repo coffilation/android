@@ -1,6 +1,6 @@
 package com.coffilation.app.util
 
-import com.coffilation.app.domain.PublicCollectionsInteractor
+import com.coffilation.app.domain.BasicStateInteractor
 import com.coffilation.app.models.RefreshTokenData
 import com.coffilation.app.network.AuthApi
 import com.coffilation.app.network.AuthRepository
@@ -28,6 +28,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -69,9 +70,20 @@ val collectionsModule = module {
         )
     }
     factory<CollectionsRepository> { CollectionRepositoryImpl(collectionsApi = get()) }
-    factory { PublicCollectionsInteractor(collectionsRepository = get()) }
+    factory {
+        BasicStateInteractor { page: Int, pageSize: Int, userId: Long ->
+            get<CollectionsRepository>().getPublicCollections(page, pageSize, userId)
+        }
+    }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
-    viewModel { MainViewModel(collectionsRepository = get(), publicCollectionsInteractor = get(), searchRepository = get(), usersRepository = get()) }
+    viewModel {
+        MainViewModel(
+            collectionsRepository = get(),
+            publicCollectionsInteractor = get(),
+            searchRepository = get(),
+            usersRepository = get()
+        )
+    }
 }
 
 val searchModule = module {

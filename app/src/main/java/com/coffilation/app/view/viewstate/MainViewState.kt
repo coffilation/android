@@ -1,11 +1,10 @@
 package com.coffilation.app.view.viewstate
 
-import com.coffilation.app.domain.PublicCollectionsState
+import com.coffilation.app.domain.BasicState
 import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.models.UserData
 import com.coffilation.app.util.UseCaseResult
-import com.coffilation.app.util.filterNonOwnCollections
 import com.coffilation.app.view.item.CardAdapterItem
 import com.coffilation.app.view.item.DragHandleItem
 import com.coffilation.app.view.item.EmptyItem
@@ -18,8 +17,6 @@ import com.coffilation.app.view.item.SearchButtonWithNavigationItem
 import com.coffilation.app.view.item.SearchInputItem
 import com.coffilation.app.view.item.SearchResultsListItem
 import com.coffilation.app.view.item.SearchSuggestionItem
-import com.coffilation.app.view.item.UserCollectionItem
-import com.coffilation.app.view.item.UserCollectionsHeaderItem
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.search.SuggestItem
 
@@ -35,10 +32,13 @@ class MainViewState(
 
     companion object {
 
+        const val TYPE_USER = 0
+        const val TYPE_PUBLIC_COLLECTIONS = 1
+
         fun valueOf(
             mode: MainViewStateMode,
             userData: UseCaseResult<UserData>?,
-            publicCollections: PublicCollectionsState,
+            publicCollections: BasicState<CollectionData>,
             privateCollections: UseCaseResult<List<CollectionData>>?,
             lastAppliedSuggestion: String?,
             searchSuggestions: UseCaseResult<List<SuggestItem>>?,
@@ -49,33 +49,45 @@ class MainViewState(
             adapterItems.add(DragHandleItem())
             when (mode) {
                 MainViewStateMode.Collections -> {
-                    val user = userData as? UseCaseResult.Success<UserData>
-                    adapterItems.add(SearchButtonItem(user?.data?.username))
-                    when (publicCollections) {
-                        PublicCollectionsState.Initial -> {
-                            adapterItems.add(LoadingItem())
-                        }
-                        is PublicCollectionsState.Loading -> {
-                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
-                            val items = arrayListOf<CardAdapterItem<*>>()
-                            items.addAll(data.map { PublicCollectionItem(it) })
-                            items.add(LoadingItem())
-                            adapterItems.add(PublicCollectionsListItem(items, false))
-                        }
-                        is PublicCollectionsState.AllPagesLoaded -> {
-                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
-                            adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, false))
-                        }
-                        is PublicCollectionsState.CanLoadMore -> {
-                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
-                            adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, true))
-                        }
-                        is PublicCollectionsState.LoadingError -> {
-                            val data = publicCollections.collections.filterNonOwnCollections(user?.data)
-                            val items = arrayListOf<CardAdapterItem<*>>()
-                            items.addAll(data.map { PublicCollectionItem(it) })
-                            items.add(ErrorItem())
-                            adapterItems.add(PublicCollectionsListItem(items, false))
+                    if (userData is UseCaseResult.Error) {
+                        adapterItems.add(SearchButtonItem(null))
+                        adapterItems.add(ErrorItem(TYPE_USER))
+                    } else if (userData is UseCaseResult.Success) {
+                        adapterItems.add(SearchButtonItem(userData.data.username))
+                        when (publicCollections) {
+                            is BasicState.Initial -> {
+                                adapterItems.add(LoadingItem(TYPE_PUBLIC_COLLECTIONS))
+                            }
+                            is BasicState.Loading -> {
+                                val data = publicCollections.data
+                                if (data.isNotEmpty()) {
+                                    val items = arrayListOf<CardAdapterItem<*>>()
+                                    items.addAll(data.map { PublicCollectionItem(it) })
+                                    items.add(LoadingItem(TYPE_PUBLIC_COLLECTIONS))
+                                    adapterItems.add(PublicCollectionsListItem(items, false))
+                                } else {
+                                    adapterItems.add(LoadingItem(TYPE_PUBLIC_COLLECTIONS))
+                                }
+                            }
+                            is BasicState.AllPagesLoaded -> {
+                                val data = publicCollections.data
+                                adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, false))
+                            }
+                            is BasicState.CanLoadMore -> {
+                                val data = publicCollections.data
+                                adapterItems.add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, true))
+                            }
+                            is BasicState.LoadingError -> {
+                                val data = publicCollections.data
+                                if (data.isNotEmpty()) {
+                                    val items = arrayListOf<CardAdapterItem<*>>()
+                                    items.addAll(data.map { PublicCollectionItem(it) })
+                                    items.add(ErrorItem(TYPE_PUBLIC_COLLECTIONS))
+                                    adapterItems.add(PublicCollectionsListItem(items, false))
+                                } else {
+                                    adapterItems.add(ErrorItem(TYPE_PUBLIC_COLLECTIONS))
+                                }
+                            }
                         }
                     }
                     /*if (

@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.coffilation.app.R
 import com.coffilation.app.databinding.FragmentMapBinding
 import com.coffilation.app.util.DataSourceAdapter
+import com.coffilation.app.util.OnEndReachedListener
 import com.coffilation.app.util.diffutil.AsyncListDifferDataSource
 import com.coffilation.app.util.dpToPx
 import com.coffilation.app.util.getBoundingBox
@@ -98,9 +99,13 @@ class MainFragment : Fragment(), MapObjectTapListener {
                 onUserClick = {}
             ),
             LoadingItemDelegate(),
-            ErrorItemDelegate(),
+            ErrorItemDelegate(viewModel::onRetryPressed),
             EmptyItemDelegate(),
-            PublicCollectionsListItemDelegate({}, viewModel::onPublicCollectionsListEndReached),
+            PublicCollectionsListItemDelegate(
+                onCollectionClick = {},
+                onRetryClick = viewModel::onPublicCollectionsListRetryPressed,
+                autoLoadingListener = OnEndReachedListener(3, viewModel::onPublicCollectionsListEndReached)
+            ),
             UserCollectionsHeaderItemDelegate {
                 parentFragmentManager.commit {
                     setReorderingAllowed(true)

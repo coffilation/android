@@ -1,9 +1,9 @@
 package com.coffilation.app.network
 
+import com.coffilation.app.models.BasicList
 import com.coffilation.app.models.CollectionAddData
 import com.coffilation.app.models.CollectionAddResult
 import com.coffilation.app.models.CollectionData
-import com.coffilation.app.models.CollectionList
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -19,14 +19,15 @@ interface CollectionsApi {
         @Body collectionAddData: CollectionAddData
     ): CollectionAddResult
 
-    @GET("compilations/")
+    @GET("compilations/?is_private=true")
     suspend fun getUserCollections(
         @Query("compilationmembership_user") userId: Long
     ): List<CollectionData>
 
-    @GET("compilations/")
+    @GET("compilations/?is_private=false")
     suspend fun getPublicCollections(
         @Query("limit") pageSize: Int,
         @Query("offset") offset: Int,
-    ): CollectionList
+        @Query("compilationmembership__user__not") userId: Long,
+    ): BasicList<CollectionData>
 }
