@@ -45,10 +45,13 @@ class SearchInputItemDelegate(
         viewHolder: BindingViewHolder<ItemSearchInputBinding>,
         payloads: List<Any>
     ) {
-        item.lastAppliedSuggestion?.also {
-            viewHolder.binding.search.apply {
-                setText(it)
-                setSelection(it.length)
+        if (viewHolder.getBoundData<String>() != item.lastAppliedSuggestion) {
+            item.lastAppliedSuggestion?.also { suggestion ->
+                viewHolder.binding.search.apply {
+                    viewHolder.setBoundData(suggestion)
+                    setText(suggestion)
+                    setSelection(suggestion.length)
+                }
             }
         }
     }
