@@ -1,6 +1,7 @@
 package com.coffilation.app.util
 
 import com.coffilation.app.domain.BasicStateInteractor
+import com.coffilation.app.models.CollectionPointRequestData
 import com.coffilation.app.models.RefreshTokenData
 import com.coffilation.app.network.AuthApi
 import com.coffilation.app.network.AuthRepository
@@ -79,11 +80,18 @@ val collectionsModule = module {
             get<CollectionsRepository>().getUserCollections(page, pageSize, userId)
         }
     }
+    factory(named("pointCollections")) {
+        BasicStateInteractor { page: Int, pageSize: Int, requestData: CollectionPointRequestData ->
+            get<CollectionsRepository>().getPointCollections(page, pageSize, requestData.userId, requestData.pointId)
+        }
+    }
     viewModel { EditCollectionViewModel(collectionsRepository = get()) }
     viewModel {
         MainViewModel(
             publicCollectionsInteractor = get(named("publicCollections")),
             userCollectionsInteractor = get(named("userCollections")),
+            pointCollectionsInteractor = get(named("pointCollections")),
+            collectionsRepository = get(),
             searchRepository = get(),
             usersRepository = get()
         )

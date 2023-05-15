@@ -2,8 +2,8 @@ package com.coffilation.app.view.delegate
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.coffilation.app.models.PointData
 import com.coffilation.app.databinding.ItemSearchResultBinding
+import com.coffilation.app.models.PointData
 import com.coffilation.app.util.delegate.BindingAdapterDelegate
 import com.coffilation.app.util.viewholder.BindingViewHolder
 import com.coffilation.app.view.item.AdapterItem
@@ -37,8 +37,9 @@ class SearchResultItemDelegate(
         viewHolder: BindingViewHolder<ItemSearchResultBinding>,
         payloads: List<Any>
     ) {
-        viewHolder.setBoundData(item.point)
-        viewHolder.binding.name.text = item.point.name
-        viewHolder.binding.address.text = item.point.displayName.removePrefix("${item.point.name}, ")
+        val point = item.point
+        viewHolder.setBoundData(point)
+        viewHolder.binding.name.text = point.getName()
+        viewHolder.binding.address.text = point.getAddress()
     }
 }

@@ -6,9 +6,17 @@ package com.coffilation.app.models
 class UserSignInError(
     val username: Array<String>?,
     val password: Array<String>?,
+    val detail: String?,
 ) {
 
     fun getMessages(): Array<String> {
-        return (username ?: emptyArray()) + (password ?: emptyArray())
+        val formErrors = (username ?: emptyArray()) + (password ?: emptyArray())
+        return formErrors.run {
+            if (!detail.isNullOrEmpty()) {
+                plus(detail)
+            } else {
+                this
+            }
+        }
     }
 }

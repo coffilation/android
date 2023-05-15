@@ -8,6 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.coffilation.app.domain.BasicState
 import com.coffilation.app.domain.BasicStateInteractor
 import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.CollectionPointData
+import com.coffilation.app.models.CollectionPointModifyRequestData
+import com.coffilation.app.models.CollectionPointRequestData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.models.SearchData
 import com.coffilation.app.models.UserData
@@ -16,6 +19,8 @@ import com.coffilation.app.network.SearchRepository
 import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.util.PAGE_SIZE
 import com.coffilation.app.util.UseCaseResult
+import com.coffilation.app.util.domain.ActionState
+import com.coffilation.app.util.domain.actionModel
 import com.coffilation.app.view.viewstate.MainViewState
 import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.search.SearchFactory
@@ -35,6 +40,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -43,6 +49,8 @@ import retrofit2.HttpException
 class MainViewModel(
     publicCollectionsInteractor: BasicStateInteractor<CollectionData, Long>,
     userCollectionsInteractor: BasicStateInteractor<CollectionData, Long>,
+    pointCollectionsInteractor: BasicStateInteractor<CollectionPointData, CollectionPointRequestData>,
+    private val collectionsRepository: CollectionsRepository,
     private val searchRepository: SearchRepository,
     private val usersRepository: UsersRepository
 ) : ViewModel() {
@@ -52,6 +60,13 @@ class MainViewModel(
 
     private val publicCollectionsModel = publicCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
     private val userCollectionsModel = userCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
+    private val pointCollectionsModel = pointCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
+    private val addPointToCollectionModel = actionModel<CollectionPointModifyRequestData, UseCaseResult<Unit>>(viewModelScope) { requestData ->
+        collectionsRepository.addPlaceToCollection(requestData.collectionId, requestData.pointId)
+    }
+    private val removePointFromCollectionModel = actionModel<CollectionPointModifyRequestData, UseCaseResult<Unit>>(viewModelScope) { requestData ->
+        collectionsRepository.removePlaceFromCollection(requestData.collectionId, requestData.pointId)
+    }
 
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
@@ -59,7 +74,6 @@ class MainViewModel(
     private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
     private val searchResultsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
-    private val detailedPointFlow = MutableStateFlow<PointData?>(null)
 
     private val viewStateFlow = combine(
         modeFlow,
@@ -69,7 +83,7 @@ class MainViewModel(
         lastAppliedSuggestionFlow,
         searchSuggestionsFlow,
         searchResultsFlow,
-        detailedPointFlow,
+        pointCollectionsModel.state,
     ) { data ->
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
@@ -80,7 +94,7 @@ class MainViewModel(
             data[4] as String?,
             data[5] as UseCaseResult<List<SuggestItem>>?,
             data[6] as UseCaseResult<List<PointData>>?,
-            data[7] as UseCaseResult<PointData>?,
+            data[7] as BasicState<CollectionPointData>,
         )
     }
 
@@ -144,14 +158,24 @@ class MainViewModel(
             publicCollectionsModel.refresh.invoke(userData.data.id)
             userCollectionsModel.refresh.invoke(userData.data.id)
         }.launchIn(viewModelScope)
+
+        merge(addPointToCollectionModel.state, removePointFromCollectionModel.state).onEach { actionState ->
+            if (actionState is ActionState.Success) {
+                val pointId = actionState.params.pointId
+                val userData = userDataFlow.value
+                if (userData is UseCaseResult.Success<UserData>) {
+                    pointCollectionsModel.refresh.invoke(CollectionPointRequestData(userData.data.id, pointId))
+                }
+            } else if (actionState is ActionState.Error){
+                mutableAction.value = Action.ShowPointModifyError
+            }
+        }.launchIn(viewModelScope)
     }
 
     fun updateUserCollections() {
-        viewModelScope.launch {
-            val userData = userDataFlow.value
-            if (userData is UseCaseResult.Success<UserData>) {
-                userCollectionsModel.refresh.invoke(userData.data.id)
-            }
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            userCollectionsModel.refresh.invoke(userData.data.id)
         }
     }
 
@@ -163,8 +187,16 @@ class MainViewModel(
         modeFlow.value = MainViewState.MainViewStateMode.Search(boundingBox)
     }
 
-    fun changeModeToSearchResults(boundingBox: BoundingBox) {
-        modeFlow.value = MainViewState.MainViewStateMode.SearchResults(boundingBox)
+    fun changeModeToSearchResults(boundingBox: BoundingBox, scrollToPoint: PointData?) {
+        modeFlow.value = MainViewState.MainViewStateMode.SearchResults(boundingBox, scrollToPoint)
+    }
+
+    fun changeModeToPointView(pointData: PointData) {
+        modeFlow.value = MainViewState.MainViewStateMode.Point(pointData)
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            pointCollectionsModel.refresh.invoke(CollectionPointRequestData(userData.data.id, pointData.id))
+        }
     }
 
     fun setSearchQuery(query: String) {
@@ -177,21 +209,28 @@ class MainViewModel(
 
     fun showSearchResults(boundingBox: BoundingBox) {
         lastAppliedSuggestionFlow.value = searchQueryFlow.value
-        changeModeToSearchResults(boundingBox)
-
-        /*val objectArrayString: String = context.resources.openRawResource(R.raw.resp).bufferedReader().use { it.readText() }
-        val listType = object : TypeToken<List<PointData>>() {}.type
-        val objectArray = Gson().fromJson<List<PointData>>(objectArrayString, listType)
-        searchResultsFlow.value = UseCaseResult.Success(objectArray as List<PointData>)*/
+        changeModeToSearchResults(boundingBox, null)
     }
 
-    fun showDetailedPoint(pointData: PointData) {
-
+    fun selectPointInList(point: PointData) {
+        val mode = modeFlow.value
+        if (mode is MainViewState.MainViewStateMode.SearchResults) {
+            changeModeToSearchResults(mode.boundingBox, point)
+        }
     }
 
-    /*fun selectPoint(point: PointData) {
-        selectedPointFlow.value = point
-    }*/
+    fun onCollectionPointModified(collectionPointData: CollectionPointData) {
+        val userData = userDataFlow.value
+        val mode = modeFlow.value
+        if (userData is UseCaseResult.Success<UserData> && mode is MainViewState.MainViewStateMode.Point) {
+            val requestData = CollectionPointModifyRequestData(collectionPointData.id, mode.pointData.id)
+            if (collectionPointData.isPlaceIncluded) {
+                addPointToCollectionModel.action.invoke(requestData)
+            } else {
+                removePointFromCollectionModel.action.invoke(requestData)
+            }
+        }
+    }
 
     fun onRetryPressed(id: Int) {
         when (id) {
@@ -205,6 +244,9 @@ class MainViewModel(
             }
             MainViewState.TYPE_USER_COLLECTIONS -> {
                 onUserCollectionsListRetryPressed()
+            }
+            MainViewState.TYPE_POINT_COLLECTIONS -> {
+                onPointCollectionsListRetryPressed()
             }
         }
     }
@@ -237,9 +279,20 @@ class MainViewModel(
         }
     }
 
+    private fun onPointCollectionsListRetryPressed() {
+        val userData = userDataFlow.value
+        val mode = modeFlow.value
+        if (userData is UseCaseResult.Success<UserData> && mode is MainViewState.MainViewStateMode.Point) {
+            val requestData = CollectionPointRequestData(userData.data.id, mode.pointData.id)
+            pointCollectionsModel.retry.invoke(requestData)
+        }
+    }
+
     sealed class Action {
 
         object ShowSignIn : Action()
+
+        object ShowPointModifyError : Action()
     }
 
     companion object {

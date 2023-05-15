@@ -18,7 +18,7 @@ fun List<Point>.getBoundingBox(): BoundingBox {
 }
 
 fun PointData.toMapPoint(): Point {
-    return Point(latitude, longitude)
+    return Point(lat, lon)
 }
 
 fun MapView.setBottomPadding(width: Float, height: Float, bottomPadding: Float) {

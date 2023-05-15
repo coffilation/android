@@ -27,4 +27,7 @@
     <string name="title">Title</string>
     <string name="description">Description</string>
     <string name="done">Done</string>
+
+    <string name="collections">Collections</string>
+    <string name="point_collection_modify_error">Error while modifying collection\'s points</string>
 </resources>

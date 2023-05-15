@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.doOnLayout
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.add
 import androidx.fragment.app.commit
@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.coffilation.app.R
 import com.coffilation.app.databinding.FragmentMapBinding
+import com.coffilation.app.models.PointData
 import com.coffilation.app.util.DataSourceAdapter
 import com.coffilation.app.util.OnEndReachedListener
 import com.coffilation.app.util.diffutil.AsyncListDifferDataSource
@@ -26,6 +27,8 @@ import com.coffilation.app.view.delegate.DragHandleItemDelegate
 import com.coffilation.app.view.delegate.EmptyItemDelegate
 import com.coffilation.app.view.delegate.ErrorItemDelegate
 import com.coffilation.app.view.delegate.LoadingItemDelegate
+import com.coffilation.app.view.delegate.PointCollectionItemDelegate
+import com.coffilation.app.view.delegate.PointInfoItemDelegate
 import com.coffilation.app.view.delegate.PublicCollectionsListItemDelegate
 import com.coffilation.app.view.delegate.SearchButtonItemDelegate
 import com.coffilation.app.view.delegate.SearchButtonWithNavigationItemDelegate
@@ -45,7 +48,6 @@ import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.logo.Padding
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.MapObject
-import com.yandex.mapkit.map.MapObjectCollection
 import com.yandex.mapkit.map.MapObjectTapListener
 import com.yandex.mapkit.map.PlacemarkMapObject
 import com.yandex.runtime.image.ImageProvider
@@ -57,7 +59,7 @@ import java.lang.Float.max
 /**
  * @author pvl-zolotov on 29.10.2022
  */
-class MainFragment : Fragment(), MapObjectTapListener {
+class MainFragment : Fragment() {
 
     private var binding: FragmentMapBinding? = null
     private val viewModel: MainViewModel by viewModel()
@@ -68,6 +70,13 @@ class MainFragment : Fragment(), MapObjectTapListener {
     private lateinit var dataSource: AsyncListDifferDataSource<AdapterItem>
     private var bottomSheetConfig: MainViewState.BottomSheetConfig? = null
     private var savedMapObjects: List<PlacemarkMapObject>? = null
+
+    private val mapObjectTapListener = MapObjectTapListener { mapObject: MapObject, point: Point ->
+        val pointData = mapObject.userData as PointData
+        zoomToMapPoint(pointData)
+        viewModel.selectPointInList(pointData)
+        true
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -125,7 +134,9 @@ class MainFragment : Fragment(), MapObjectTapListener {
             SearchButtonWithNavigationItemDelegate {
                 getBoundingBox()?.also(viewModel::changeModeToSearch)
             },
-            SearchResultsListItemDelegate({})
+            SearchResultsListItemDelegate(viewModel::changeModeToPointView, ::zoomToMapPoint),
+            PointInfoItemDelegate(),
+            PointCollectionItemDelegate(viewModel::onCollectionPointModified),
         )
         autoLoadingListener = OnEndReachedListener(3, viewModel::onUserCollectionsListEndReached)
 
@@ -187,6 +198,9 @@ class MainFragment : Fragment(), MapObjectTapListener {
                         replace<SignInFragment>(R.id.fragment_container_view)
                     }
                 }
+                MainViewModel.Action.ShowPointModifyError -> {
+                    Toast.makeText(requireContext(), R.string.point_collection_modify_error, Toast.LENGTH_LONG).show()
+                }
             }
         }
 
@@ -231,50 +245,42 @@ class MainFragment : Fragment(), MapObjectTapListener {
 
             binding?.mapview?.map?.apply {
                 savedMapObjects?.forEach {
-                    it.removeTapListener(this@MainFragment)
+                    it.removeTapListener(mapObjectTapListener)
                     mapObjects.remove(it)
                 }
                 mapObjects.clear()
                 val imageProvider = ImageProvider.fromResource(requireContext(), R.drawable.ic_location)
                 val selectedImageProvider = ImageProvider.fromResource(requireContext(), R.drawable.ic_location_selected)
                 //collection?.addTapListener(this@MainFragment)
-                state?.points?.forEach { pointData ->
+                val points = state?.points
+                points?.forEach { pointData ->
                     mapObjects.addPlacemark(pointData.toMapPoint(), imageProvider).apply {
                         userData = pointData
-                        addTapListener(this@MainFragment)
+                        addTapListener(mapObjectTapListener)
                     }
                 }
-                if (state?.points?.isNotEmpty() == true) {
-                    state.points.map { it.toMapPoint() }.getBoundingBox().also { boundingBox ->
-                        val cameraPosition = cameraPosition(boundingBox)
-                        val newCameraPosition = CameraPosition(
-                            cameraPosition.target,
-                            cameraPosition.zoom,
-                            cameraPosition.azimuth,
-                            cameraPosition.tilt
-                        )
-                        move(
-                            newCameraPosition,
-                            Animation(Animation.Type.SMOOTH, 0.3f),
-                            null
-                        )
+                if (points?.isNotEmpty() == true) {
+                    if (state.selectedPoint == null) {
+                        points.map { it.toMapPoint() }.getBoundingBox().also { boundingBox ->
+                            val cameraPosition = cameraPosition(boundingBox)
+                            val newCameraPosition = CameraPosition(
+                                cameraPosition.target,
+                                cameraPosition.zoom,
+                                cameraPosition.azimuth,
+                                cameraPosition.tilt
+                            )
+                            move(
+                                newCameraPosition,
+                                Animation(Animation.Type.SMOOTH, 0.3f),
+                                null
+                            )
+                        }
+                    } else {
+                        zoomToMapPoint(state.selectedPoint)
                     }
                 }
             }
         }
-    }
-
-    override fun onMapObjectTap(mapObject: MapObject, point: Point): Boolean {
-        //viewModel.selectPoint(mapObject.userData as PointData)
-        binding?.mapview?.map?.apply {
-            val animation = Animation(Animation.Type.SMOOTH, 0.3f)
-            move(
-                CameraPosition(point, max(cameraPosition.zoom, MIN_ZOOM), cameraPosition.azimuth, cameraPosition.tilt),
-                animation,
-                null
-            )
-        }
-        return true
     }
 
     override fun onDestroyView() {
@@ -295,6 +301,17 @@ class MainFragment : Fragment(), MapObjectTapListener {
         super.onStart()
         MapKitFactory.getInstance().onStart()
         binding?.mapview?.onStart()
+    }
+
+    private fun zoomToMapPoint(pointData: PointData) {
+        binding?.mapview?.map?.apply {
+            val animation = Animation(Animation.Type.SMOOTH, 0.3f)
+            move(
+                CameraPosition(pointData.toMapPoint(), max(cameraPosition.zoom, MIN_ZOOM), cameraPosition.azimuth, cameraPosition.tilt),
+                animation,
+                null
+            )
+        }
     }
 
     private fun getBoundingBox(): BoundingBox? {

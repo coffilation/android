@@ -2,6 +2,7 @@ package com.coffilation.app.view.viewstate
 
 import com.coffilation.app.domain.BasicState
 import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.models.UserData
 import com.coffilation.app.util.UseCaseResult
@@ -10,6 +11,8 @@ import com.coffilation.app.view.item.DragHandleItem
 import com.coffilation.app.view.item.EmptyItem
 import com.coffilation.app.view.item.ErrorItem
 import com.coffilation.app.view.item.LoadingItem
+import com.coffilation.app.view.item.PointCollectionItem
+import com.coffilation.app.view.item.PointInfoItem
 import com.coffilation.app.view.item.PublicCollectionItem
 import com.coffilation.app.view.item.PublicCollectionsListItem
 import com.coffilation.app.view.item.SearchButtonItem
@@ -30,6 +33,7 @@ class MainViewState(
     val bottomSheetConfig: BottomSheetConfig,
     val allowShowKeyboard: Boolean,
     val points: List<PointData>?,
+    val selectedPoint: PointData?,
     val autoLoadingEnabled: Boolean,
 ) {
 
@@ -38,17 +42,19 @@ class MainViewState(
         const val TYPE_USER = 0
         const val TYPE_PUBLIC_COLLECTIONS = 1
         const val TYPE_USER_COLLECTIONS = 2
-        const val TYPE_SEARCH = 2
+        const val TYPE_SEARCH = 3
+        const val TYPE_SEARCH_RESULTS = 4
+        const val TYPE_POINT_COLLECTIONS = 5
 
         fun valueOf(
             mode: MainViewStateMode,
             userData: UseCaseResult<UserData>,
             publicCollections: BasicState<CollectionData>,
-            userCollections:  BasicState<CollectionData>,
+            userCollections: BasicState<CollectionData>,
             lastAppliedSuggestion: String?,
             searchSuggestions: UseCaseResult<List<SuggestItem>>?,
             searchResults: UseCaseResult<List<PointData>>?,
-            detailedPoint: UseCaseResult<PointData>?,
+            pointCollections: BasicState<CollectionPointData>,
         ): MainViewState {
             val adapterItems = mutableListOf<CardAdapterItem<*>>()
             adapterItems.add(DragHandleItem())
@@ -71,6 +77,7 @@ class MainViewState(
                         adapterItems,
                         BottomSheetConfig(BottomSheetState.PEEKED_COMPACT, BottomSheetState.FULLSCREEN),
                         false,
+                        null,
                         null,
                         autoLoadingEnabled
                     )
@@ -95,6 +102,7 @@ class MainViewState(
                         BottomSheetConfig(BottomSheetState.FULLSCREEN, BottomSheetState.FULLSCREEN),
                         true,
                         null,
+                        null,
                         false
                     )
                 }
@@ -103,13 +111,13 @@ class MainViewState(
                     var points = emptyList<PointData>()
                     if (searchResults is UseCaseResult.Success) {
                         if (searchResults.data.isNotEmpty()) {
-                            adapterItems.add(SearchResultsListItem(searchResults.data))
+                            adapterItems.add(SearchResultsListItem(searchResults.data, mode.scrollToPoint))
                             points = searchResults.data
                         } else {
                             adapterItems.add(EmptyItem())
                         }
                     } else if (searchResults is UseCaseResult.Error) {
-                        adapterItems.add(ErrorItem())
+                        adapterItems.add(ErrorItem(TYPE_SEARCH_RESULTS))
                     } else {
                         adapterItems.add(LoadingItem())
                     }
@@ -118,14 +126,18 @@ class MainViewState(
                         BottomSheetConfig(BottomSheetState.PEEKED_MEDIUM, BottomSheetState.PEEKED_MEDIUM),
                         false,
                         points,
+                        mode.scrollToPoint,
                         false
                     )
                 }
                 is MainViewStateMode.Point -> {
+                    adapterItems.add(PointInfoItem(mode.pointData))
+                    adapterItems.addPointCollections(pointCollections)
                     return MainViewState(
                         adapterItems,
-                        BottomSheetConfig(BottomSheetState.PEEKED_MEDIUM, BottomSheetState.FULLSCREEN),
+                        BottomSheetConfig(BottomSheetState.FULLSCREEN, BottomSheetState.FULLSCREEN),
                         false,
+                        null,
                         null,
                         false
                     )
@@ -218,14 +230,61 @@ class MainViewState(
             }
             return autoLoadingEnabled
         }
+
+        private fun MutableList<CardAdapterItem<*>>.addPointCollections(pointCollections: BasicState<CollectionPointData>): Boolean {
+            val autoLoadingEnabled: Boolean
+            when (pointCollections) {
+                is BasicState.Initial -> {
+                    add(LoadingItem(TYPE_POINT_COLLECTIONS))
+                    autoLoadingEnabled = false
+                }
+                is BasicState.Loading -> {
+                    if (pointCollections.data.isNotEmpty()) {
+                        pointCollections.data.forEach {
+                            add(PointCollectionItem(it))
+                        }
+                    }
+                    add(LoadingItem(TYPE_POINT_COLLECTIONS))
+                    autoLoadingEnabled = false
+                }
+                is BasicState.AllPagesLoaded -> {
+                    if (pointCollections.data.isNotEmpty()) {
+                        pointCollections.data.forEach {
+                            add(PointCollectionItem(it))
+                        }
+                    } else {
+                        add(EmptyItem())
+                    }
+                    autoLoadingEnabled = false
+                }
+                is BasicState.CanLoadMore -> {
+                    if (pointCollections.data.isNotEmpty()) {
+                        pointCollections.data.forEach {
+                            add(PointCollectionItem(it))
+                        }
+                    }
+                    autoLoadingEnabled = true
+                }
+                is BasicState.LoadingError -> {
+                    if (pointCollections.data.isNotEmpty()) {
+                        pointCollections.data.forEach {
+                            add(PointCollectionItem(it))
+                        }
+                    }
+                    add(ErrorItem(TYPE_POINT_COLLECTIONS))
+                    autoLoadingEnabled = false
+                }
+            }
+            return autoLoadingEnabled
+        }
     }
 
     sealed class MainViewStateMode {
 
         object Collections : MainViewStateMode()
         class Search(val boundingBox: BoundingBox) : MainViewStateMode()
-        class SearchResults(val boundingBox: BoundingBox) : MainViewStateMode()
-        class Point(val osmId: Long, val osmType: String, val category: String) : MainViewStateMode()
+        class SearchResults(val boundingBox: BoundingBox, val scrollToPoint: PointData?) : MainViewStateMode()
+        class Point(val pointData: PointData) : MainViewStateMode()
     }
 
     data class BottomSheetConfig(
