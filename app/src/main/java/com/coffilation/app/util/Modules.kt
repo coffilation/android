@@ -9,6 +9,9 @@ import com.coffilation.app.network.AuthRepositoryImpl
 import com.coffilation.app.network.CollectionRepositoryImpl
 import com.coffilation.app.network.CollectionsApi
 import com.coffilation.app.network.CollectionsRepository
+import com.coffilation.app.network.MapApi
+import com.coffilation.app.network.MapRepository
+import com.coffilation.app.network.MapRepositoryImpl
 import com.coffilation.app.network.SearchApi
 import com.coffilation.app.network.SearchRepository
 import com.coffilation.app.network.SearchRepositoryImpl
@@ -93,6 +96,7 @@ val collectionsModule = module {
             pointCollectionsInteractor = get(named("pointCollections")),
             collectionsRepository = get(),
             searchRepository = get(),
+            mapRepository = get(),
             usersRepository = get()
         )
     }
@@ -106,6 +110,16 @@ val searchModule = module {
         )
     }
     factory<SearchRepository> { SearchRepositoryImpl(searchApi = get()) }
+}
+
+val mapModule = module {
+    single {
+        createWebService<MapApi>(
+            okHttpClient = createHttpClient(prefRepository = get(), authRepository = get()),
+            baseUrl = API_BASE_URL
+        )
+    }
+    factory<MapRepository> { MapRepositoryImpl(mapApi = get()) }
 }
 
 val authModule = module {

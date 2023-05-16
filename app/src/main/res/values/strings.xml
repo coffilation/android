@@ -27,7 +27,10 @@
     <string name="title">Title</string>
     <string name="description">Description</string>
     <string name="done">Done</string>
+    <string name="saving_error">Error while saving the collection</string>
 
     <string name="collections">Collections</string>
     <string name="point_collection_modify_error">Error while modifying collection\'s points</string>
+
+    <string name="collection_remove_error">Error while removing the collection</string>
 </resources>

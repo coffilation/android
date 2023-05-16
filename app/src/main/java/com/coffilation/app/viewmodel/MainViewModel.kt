@@ -15,6 +15,7 @@ import com.coffilation.app.models.PointData
 import com.coffilation.app.models.SearchData
 import com.coffilation.app.models.UserData
 import com.coffilation.app.network.CollectionsRepository
+import com.coffilation.app.network.MapRepository
 import com.coffilation.app.network.SearchRepository
 import com.coffilation.app.network.UsersRepository
 import com.coffilation.app.util.PAGE_SIZE
@@ -52,6 +53,7 @@ class MainViewModel(
     pointCollectionsInteractor: BasicStateInteractor<CollectionPointData, CollectionPointRequestData>,
     private val collectionsRepository: CollectionsRepository,
     private val searchRepository: SearchRepository,
+    private val mapRepository: MapRepository,
     private val usersRepository: UsersRepository
 ) : ViewModel() {
 
@@ -67,6 +69,9 @@ class MainViewModel(
     private val removePointFromCollectionModel = actionModel<CollectionPointModifyRequestData, UseCaseResult<Unit>>(viewModelScope) { requestData ->
         collectionsRepository.removePlaceFromCollection(requestData.collectionId, requestData.pointId)
     }
+    private val removeCollectionModel = actionModel<Long, UseCaseResult<Unit>>(viewModelScope) { id ->
+        collectionsRepository.removeCollection(id)
+    }
 
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
@@ -74,6 +79,7 @@ class MainViewModel(
     private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
     private val searchResultsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
+    private val pointsForCollectionsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
 
     private val viewStateFlow = combine(
         modeFlow,
@@ -84,6 +90,7 @@ class MainViewModel(
         searchSuggestionsFlow,
         searchResultsFlow,
         pointCollectionsModel.state,
+        pointsForCollectionsFlow,
     ) { data ->
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
@@ -95,6 +102,7 @@ class MainViewModel(
             data[5] as UseCaseResult<List<SuggestItem>>?,
             data[6] as UseCaseResult<List<PointData>>?,
             data[7] as BasicState<CollectionPointData>,
+            data[8] as UseCaseResult<List<PointData>>?,
         )
     }
 
@@ -159,23 +167,45 @@ class MainViewModel(
             userCollectionsModel.refresh.invoke(userData.data.id)
         }.launchIn(viewModelScope)
 
-        merge(addPointToCollectionModel.state, removePointFromCollectionModel.state).onEach { actionState ->
-            if (actionState is ActionState.Success) {
-                val pointId = actionState.params.pointId
-                val userData = userDataFlow.value
-                if (userData is UseCaseResult.Success<UserData>) {
-                    pointCollectionsModel.refresh.invoke(CollectionPointRequestData(userData.data.id, pointId))
+        merge(addPointToCollectionModel.state, removePointFromCollectionModel.state)
+            .filterIsInstance<ActionState.Success<CollectionPointModifyRequestData, UseCaseResult<Unit>>>()
+            .onEach { result ->
+                if (result.data is UseCaseResult.Success<*>) {
+                    val pointId = result.params.pointId
+                    val userData = userDataFlow.value
+                    if (userData is UseCaseResult.Success<UserData>) {
+                        pointCollectionsModel.refresh.invoke(CollectionPointRequestData(userData.data.id, pointId))
+                    }
+                } else if (result.data is UseCaseResult.Error) {
+                    mutableAction.value = Action.ShowPointModifyError
                 }
-            } else if (actionState is ActionState.Error){
-                mutableAction.value = Action.ShowPointModifyError
             }
-        }.launchIn(viewModelScope)
+            .launchIn(viewModelScope)
+
+        removeCollectionModel.state
+            .filterIsInstance<ActionState.Success<CollectionPointModifyRequestData, UseCaseResult<Unit>>>()
+            .onEach { result ->
+                if (result.data is UseCaseResult.Success<*>) {
+                    updateUserCollections()
+                    updatePublicCollections()
+                    changeModeToCollections()
+                } else if (result.data is UseCaseResult.Error){
+                    mutableAction.value = Action.ShowRemoveCollectionError
+                }
+            }.launchIn(viewModelScope)
     }
 
     fun updateUserCollections() {
         val userData = userDataFlow.value
         if (userData is UseCaseResult.Success<UserData>) {
             userCollectionsModel.refresh.invoke(userData.data.id)
+        }
+    }
+
+    private fun updatePublicCollections() {
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            publicCollectionsModel.refresh.invoke(userData.data.id)
         }
     }
 
@@ -199,6 +229,20 @@ class MainViewModel(
         }
     }
 
+    fun changeModeToCollectionView(collectionData: CollectionData, scrollToPoint: PointData?) {
+        modeFlow.value = MainViewState.MainViewStateMode.Collection(collectionData, scrollToPoint)
+        val userData = userDataFlow.value
+        if (userData is UseCaseResult.Success<UserData>) {
+            viewModelScope.launch {
+                pointsForCollectionsFlow.value = mapRepository.getPointsForCollections(arrayOf(collectionData.id))
+            }
+        }
+    }
+
+    fun removeCollection(collectionId: Long) {
+        removeCollectionModel.action.invoke(collectionId)
+    }
+
     fun setSearchQuery(query: String) {
         searchQueryFlow.value = query
     }
@@ -216,6 +260,8 @@ class MainViewModel(
         val mode = modeFlow.value
         if (mode is MainViewState.MainViewStateMode.SearchResults) {
             changeModeToSearchResults(mode.boundingBox, point)
+        } else if (mode is MainViewState.MainViewStateMode.Collection) {
+            changeModeToCollectionView(mode.collectionData, point)
         }
     }
 
@@ -293,6 +339,8 @@ class MainViewModel(
         object ShowSignIn : Action()
 
         object ShowPointModifyError : Action()
+
+        object ShowRemoveCollectionError : Action()
     }
 
     companion object {

@@ -7,13 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.add
 import androidx.fragment.app.commit
 import androidx.fragment.app.setFragmentResultListener
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.coffilation.app.R
 import com.coffilation.app.databinding.FragmentMapBinding
+import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.util.DataSourceAdapter
 import com.coffilation.app.util.OnEndReachedListener
@@ -23,6 +23,7 @@ import com.coffilation.app.util.getBoundingBox
 import com.coffilation.app.util.hideKeyboard
 import com.coffilation.app.util.setBottomPadding
 import com.coffilation.app.util.toMapPoint
+import com.coffilation.app.view.delegate.CollectionInfoItemDelegate
 import com.coffilation.app.view.delegate.DragHandleItemDelegate
 import com.coffilation.app.view.delegate.EmptyItemDelegate
 import com.coffilation.app.view.delegate.ErrorItemDelegate
@@ -112,18 +113,16 @@ class MainFragment : Fragment() {
             ErrorItemDelegate(viewModel::onRetryPressed),
             EmptyItemDelegate(),
             PublicCollectionsListItemDelegate(
-                onCollectionClick = {},
+                onCollectionClick = { viewModel.changeModeToCollectionView(it, null) },
                 onRetryClick = viewModel::onPublicCollectionsListRetryPressed,
                 autoLoadingListener = OnEndReachedListener(3, viewModel::onPublicCollectionsListEndReached)
             ),
             UserCollectionsHeaderItemDelegate {
-                parentFragmentManager.commit {
-                    setReorderingAllowed(true)
-                    add<EditCollectionFragment>(R.id.fragment_container_view)
-                    addToBackStack(null)
-                }
+                openEditCollectionFragment(null)
             },
-            UserCollectionItemDelegate({}),
+            UserCollectionItemDelegate {
+                viewModel.changeModeToCollectionView(it, null)
+            },
             SearchInputItemDelegate(
                 onInputChanged = viewModel::setSearchQuery,
                 onSearchStart = {
@@ -137,6 +136,10 @@ class MainFragment : Fragment() {
             SearchResultsListItemDelegate(viewModel::changeModeToPointView, ::zoomToMapPoint),
             PointInfoItemDelegate(),
             PointCollectionItemDelegate(viewModel::onCollectionPointModified),
+            CollectionInfoItemDelegate(
+                onEditCollectionClick = ::openEditCollectionFragment,
+                onRemoveCollectionClick = viewModel::removeCollection
+            ),
         )
         autoLoadingListener = OnEndReachedListener(3, viewModel::onUserCollectionsListEndReached)
 
@@ -185,8 +188,15 @@ class MainFragment : Fragment() {
         }*/
 
         setFragmentResultListener(REQUEST_KEY_EDIT_COLLECTION) { requestKey, bundle ->
-            if (bundle.getBoolean(KEY_USER_COLLECTIONS_CHANGED)) {
-                viewModel.updateUserCollections()
+            val mode = bundle.getString(KEY_COLLECTIONS_SAVING_MODE)
+            when (mode) {
+                COLLECTIONS_CREATED -> viewModel.updateUserCollections()
+                COLLECTIONS_EDITED -> {
+                    viewModel.updateUserCollections()
+                    (bundle.getSerializable(KEY_COLLECTIONS_SAVING_RESULT) as? CollectionData)?.also { collection ->
+                        viewModel.changeModeToCollectionView(collection, null)
+                    }
+                }
             }
         }
 
@@ -200,6 +210,9 @@ class MainFragment : Fragment() {
                 }
                 MainViewModel.Action.ShowPointModifyError -> {
                     Toast.makeText(requireContext(), R.string.point_collection_modify_error, Toast.LENGTH_LONG).show()
+                }
+                MainViewModel.Action.ShowRemoveCollectionError -> {
+                    Toast.makeText(requireContext(), R.string.collection_remove_error, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -251,7 +264,6 @@ class MainFragment : Fragment() {
                 mapObjects.clear()
                 val imageProvider = ImageProvider.fromResource(requireContext(), R.drawable.ic_location)
                 val selectedImageProvider = ImageProvider.fromResource(requireContext(), R.drawable.ic_location_selected)
-                //collection?.addTapListener(this@MainFragment)
                 val points = state?.points
                 points?.forEach { pointData ->
                     mapObjects.addPlacemark(pointData.toMapPoint(), imageProvider).apply {
@@ -303,6 +315,18 @@ class MainFragment : Fragment() {
         binding?.mapview?.onStart()
     }
 
+    private fun openEditCollectionFragment(collection: CollectionData?) {
+        val fragment = EditCollectionFragment()
+        collection?.also { data ->
+            fragment.arguments = EditCollectionFragment.createArgs(data)
+        }
+        parentFragmentManager.commit {
+            setReorderingAllowed(true)
+            add(R.id.fragment_container_view, fragment, EditCollectionFragment.TAG)
+            addToBackStack(null)
+        }
+    }
+
     private fun zoomToMapPoint(pointData: PointData) {
         binding?.mapview?.map?.apply {
             val animation = Animation(Animation.Type.SMOOTH, 0.3f)
@@ -340,7 +364,10 @@ class MainFragment : Fragment() {
     companion object {
 
         const val REQUEST_KEY_EDIT_COLLECTION = "requestKeyEditCollection"
-        const val KEY_USER_COLLECTIONS_CHANGED = "userCollectionsChanged"
+        const val KEY_COLLECTIONS_SAVING_MODE = "collectionsSavingMode"
+        const val KEY_COLLECTIONS_SAVING_RESULT = "collectionsSavingResult"
+        const val COLLECTIONS_CREATED = "collectionCreated"
+        const val COLLECTIONS_EDITED = "collectionEdited"
         const val MIN_ZOOM = 13f
     }
 }

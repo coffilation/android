@@ -2,13 +2,15 @@ package com.coffilation.app.network
 
 import com.coffilation.app.models.BasicList
 import com.coffilation.app.models.CollectionAddData
-import com.coffilation.app.models.CollectionAddResult
 import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PlacesToModifyData
+import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -19,8 +21,14 @@ interface CollectionsApi {
 
     @POST("compilations/")
     suspend fun addCollection(
-        @Body collectionAddData: CollectionAddData
-    ): CollectionAddResult
+        @Body collectionAddData: CollectionAddData,
+    ): CollectionData
+
+    @PUT("compilations/{id}/")
+    suspend fun editCollection(
+        @Path("id") collectionId: Long,
+        @Body collectionAddData: CollectionAddData,
+    ): CollectionData
 
     @GET("compilations/")
     suspend fun getUserCollections(
@@ -48,11 +56,16 @@ interface CollectionsApi {
     suspend fun addPlaceToCollection(
         @Path("id") collectionId: Long,
         @Body placeIds: PlacesToModifyData,
-    )
+    ): Response<Unit>
 
     @POST("compilations/{id}/remove_places/")
     suspend fun removePlaceFromCollection(
         @Path("id") collectionId: Long,
         @Body placeIds: PlacesToModifyData,
-    )
+    ): Response<Unit>
+
+    @DELETE("compilations/{id}/")
+    suspend fun removeCollection(
+        @Path("id") collectionId: Long,
+    ): Response<Unit>
 }

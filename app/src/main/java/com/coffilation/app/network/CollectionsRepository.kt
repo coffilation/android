@@ -2,7 +2,6 @@ package com.coffilation.app.network
 
 import com.coffilation.app.models.BasicList
 import com.coffilation.app.models.CollectionAddData
-import com.coffilation.app.models.CollectionAddResult
 import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PlacesToModifyData
@@ -13,7 +12,9 @@ import com.coffilation.app.util.UseCaseResult
  */
 interface CollectionsRepository {
 
-    suspend fun addCollection(collectionAddData: CollectionAddData): UseCaseResult<CollectionAddResult>
+    suspend fun addCollection(collectionAddData: CollectionAddData): UseCaseResult<CollectionData>
+
+    suspend fun editCollection(collectionId: Long, collectionAddData: CollectionAddData): UseCaseResult<CollectionData>
 
     suspend fun getUserCollections(page: Int, pageSize: Int, userId: Long): UseCaseResult<BasicList<CollectionData>>
 
@@ -24,13 +25,24 @@ interface CollectionsRepository {
     suspend fun addPlaceToCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit>
 
     suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit>
+
+    suspend fun removeCollection(collectionId: Long): UseCaseResult<Unit>
 }
 
 class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : CollectionsRepository {
 
-    override suspend fun addCollection(collectionAddData: CollectionAddData): UseCaseResult<CollectionAddResult> {
+    override suspend fun addCollection(collectionAddData: CollectionAddData): UseCaseResult<CollectionData> {
         return try {
             val result = collectionsApi.addCollection(collectionAddData)
+            UseCaseResult.Success(result)
+        } catch (ex: Exception) {
+            UseCaseResult.Error(ex)
+        }
+    }
+
+    override suspend fun editCollection(collectionId: Long, collectionAddData: CollectionAddData): UseCaseResult<CollectionData> {
+        return try {
+            val result = collectionsApi.editCollection(collectionId, collectionAddData)
             UseCaseResult.Success(result)
         } catch (ex: Exception) {
             UseCaseResult.Error(ex)
@@ -76,6 +88,15 @@ class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : Col
     override suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit> {
         return try {
             collectionsApi.removePlaceFromCollection(collectionId, PlacesToModifyData(arrayOf(pointId)))
+            UseCaseResult.Success(Unit)
+        } catch (ex: Exception) {
+            UseCaseResult.Error(ex)
+        }
+    }
+
+    override suspend fun removeCollection(collectionId: Long): UseCaseResult<Unit> {
+        return try {
+            collectionsApi.removeCollection(collectionId)
             UseCaseResult.Success(Unit)
         } catch (ex: Exception) {
             UseCaseResult.Error(ex)

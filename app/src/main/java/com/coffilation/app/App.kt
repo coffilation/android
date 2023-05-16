@@ -3,6 +3,7 @@ package com.coffilation.app
 import android.app.Application
 import com.coffilation.app.util.authModule
 import com.coffilation.app.util.collectionsModule
+import com.coffilation.app.util.mapModule
 import com.coffilation.app.util.prefModule
 import com.coffilation.app.util.searchModule
 import com.coffilation.app.util.signInModule
@@ -29,6 +30,7 @@ class App : Application() {
                 prefModule,
                 collectionsModule,
                 searchModule,
+                mapModule,
             )
             modules(list)
         }
