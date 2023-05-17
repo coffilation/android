@@ -45,6 +45,8 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import java.util.LinkedHashMap
+import java.util.LinkedList
 
 
 class MainViewModel(
@@ -59,6 +61,7 @@ class MainViewModel(
 
     private val searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED)
     private val suggestSession = searchManager.createSuggestSession()
+    private val navigationBackStack = arrayListOf<MainViewState.MainViewStateMode>()
 
     private val publicCollectionsModel = publicCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
     private val userCollectionsModel = userCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
@@ -83,7 +86,7 @@ class MainViewModel(
 
     private val viewStateFlow = combine(
         modeFlow,
-        userDataFlow.filterNotNull(),
+        userDataFlow,
         publicCollectionsModel.state,
         userCollectionsModel.state,
         lastAppliedSuggestionFlow,
@@ -95,7 +98,7 @@ class MainViewModel(
         @Suppress("UNCHECKED_CAST")
         MainViewState.valueOf(
             data[0] as MainViewState.MainViewStateMode,
-            data[1] as UseCaseResult<UserData>,
+            data[1] as UseCaseResult<UserData>?,
             data[2] as BasicState<CollectionData>,
             data[3] as BasicState<CollectionData>,
             data[4] as String?,
@@ -193,6 +196,15 @@ class MainViewModel(
                     mutableAction.value = Action.ShowRemoveCollectionError
                 }
             }.launchIn(viewModelScope)
+
+        modeFlow.onEach { mode ->
+            val duplicatingMode = navigationBackStack.filterIsInstance(mode::class.java).firstOrNull()
+            if (duplicatingMode != null) {
+                val duplicatingModeIndex = navigationBackStack.indexOf(duplicatingMode)
+                navigationBackStack.subList(duplicatingModeIndex, navigationBackStack.size).clear()
+            }
+            navigationBackStack.add(mode)
+        }.launchIn(viewModelScope)
     }
 
     fun updateUserCollections() {
@@ -237,6 +249,13 @@ class MainViewModel(
                 pointsForCollectionsFlow.value = mapRepository.getPointsForCollections(arrayOf(collectionData.id))
             }
         }
+    }
+
+    fun goToPreviousMode(): Boolean {
+        return navigationBackStack.getOrNull(navigationBackStack.lastIndex - 1)?.let { mode ->
+            modeFlow.value = mode
+            true
+        } ?: false
     }
 
     fun removeCollection(collectionId: Long) {

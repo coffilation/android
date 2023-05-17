@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.fragment.app.setFragmentResultListener
@@ -127,18 +128,23 @@ class MainFragment : Fragment() {
                 onInputChanged = viewModel::setSearchQuery,
                 onSearchStart = {
                     getBoundingBox()?.also(viewModel::showSearchResults)
-                }
+                },
+                onBackClick = viewModel::goToPreviousMode,
             ),
             SearchSuggestionItemDelegate(viewModel::applySearchSuggestion),
-            SearchButtonWithNavigationItemDelegate {
-                getBoundingBox()?.also(viewModel::changeModeToSearch)
-            },
+            SearchButtonWithNavigationItemDelegate(
+                onSearchClick = {
+                    getBoundingBox()?.also(viewModel::changeModeToSearch)
+                },
+                onBackClick = viewModel::goToPreviousMode,
+            ),
             SearchResultsListItemDelegate(viewModel::changeModeToPointView, ::zoomToMapPoint),
-            PointInfoItemDelegate(),
+            PointInfoItemDelegate(viewModel::goToPreviousMode),
             PointCollectionItemDelegate(viewModel::onCollectionPointModified),
             CollectionInfoItemDelegate(
                 onEditCollectionClick = ::openEditCollectionFragment,
-                onRemoveCollectionClick = viewModel::removeCollection
+                onRemoveCollectionClick = viewModel::removeCollection,
+                onBackClick = viewModel::goToPreviousMode,
             ),
         )
         autoLoadingListener = OnEndReachedListener(3, viewModel::onUserCollectionsListEndReached)
@@ -159,13 +165,13 @@ class MainFragment : Fragment() {
                     newState == BottomSheetBehavior.STATE_COLLAPSED &&
                     bottomSheetConfig?.minHeight == MainViewState.BottomSheetState.FULLSCREEN
                 ) {
-                    viewModel.changeModeToCollections()
+                    viewModel.goToPreviousMode()
                 }
                 if (
                     newState == BottomSheetBehavior.STATE_EXPANDED &&
                     bottomSheetConfig?.minHeight == MainViewState.BottomSheetState.PEEKED_MEDIUM
                 ) {
-                    getBoundingBox()?.also(viewModel::changeModeToSearch)
+                    viewModel.goToPreviousMode()
                 }
             }
 
@@ -179,13 +185,11 @@ class MainFragment : Fragment() {
             }
         }
 
-        /*requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
-            if (bottomSheetBehavior?.state == BottomSheetBehavior.STATE_EXPANDED) {
-                bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
-            } else {
-                this.handleOnBackPressed()
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
+            if (!viewModel.goToPreviousMode()) {
+                requireActivity().finish()
             }
-        }*/
+        }
 
         setFragmentResultListener(REQUEST_KEY_EDIT_COLLECTION) { requestKey, bundle ->
             val mode = bundle.getString(KEY_COLLECTIONS_SAVING_MODE)
@@ -249,10 +253,12 @@ class MainFragment : Fragment() {
                             setBottomPadding(width().toFloat(), height().toFloat(), it.toFloat())
                         }
                     }
-                    if (bottomSheetBehavior?.state == BottomSheetBehavior.STATE_EXPANDED) {
+                    if (
+                        bottomSheetBehavior?.state == BottomSheetBehavior.STATE_EXPANDED &&
+                        bottomSheetConfig?.maxHeight != MainViewState.BottomSheetState.FULLSCREEN
+                    ) {
                         bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
                     }
-                    //bottomSheetBehavior?.isDraggable = bottomSheetConfig?.maxHeight != bottomSheetConfig?.minHeight
                 }
             }
 

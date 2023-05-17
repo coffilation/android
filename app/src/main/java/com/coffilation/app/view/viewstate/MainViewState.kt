@@ -50,7 +50,7 @@ class MainViewState(
 
         fun valueOf(
             mode: MainViewStateMode,
-            userData: UseCaseResult<UserData>,
+            userData: UseCaseResult<UserData>?,
             publicCollections: BasicState<CollectionData>,
             userCollections: BasicState<CollectionData>,
             lastAppliedSuggestion: String?,
@@ -65,15 +65,20 @@ class MainViewState(
                 MainViewStateMode.Collections -> {
                     val autoLoadingEnabled: Boolean
                     when (userData) {
+                        is UseCaseResult.Success -> {
+                            adapterItems.add(SearchButtonItem(userData.data.username))
+                            adapterItems.addPublicCollections(publicCollections)
+                            autoLoadingEnabled = adapterItems.addUserCollections(userCollections)
+                        }
                         is UseCaseResult.Error -> {
                             adapterItems.add(SearchButtonItem(null))
                             adapterItems.add(ErrorItem(TYPE_USER))
                             autoLoadingEnabled = false
                         }
-                        is UseCaseResult.Success -> {
-                            adapterItems.add(SearchButtonItem(userData.data.username))
-                            adapterItems.addPublicCollections(publicCollections)
-                            autoLoadingEnabled = adapterItems.addUserCollections(userCollections)
+                        null -> {
+                            adapterItems.add(SearchButtonItem(null))
+                            adapterItems.add(LoadingItem())
+                            autoLoadingEnabled = false
                         }
                     }
                     return MainViewState(

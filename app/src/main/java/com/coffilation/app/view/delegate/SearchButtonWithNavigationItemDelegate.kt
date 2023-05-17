@@ -16,8 +16,8 @@ import com.coffilation.app.view.item.SearchInputItem
  * @author pvl-zolotov on 28.11.2022
  */
 class SearchButtonWithNavigationItemDelegate(
-    //private val onBackClick: () -> Unit,
     private val onSearchClick: () -> Unit,
+    private val onBackClick: () -> Unit,
 ) : BindingAdapterDelegate<SearchButtonWithNavigationItem, AdapterItem, ItemSearchButtonWithNavigationBinding>(
     SearchButtonWithNavigationItem::class.java,
     ItemSearchButtonWithNavigationBinding::inflate
@@ -28,9 +28,9 @@ class SearchButtonWithNavigationItemDelegate(
             binding.search.setOnClickListener {
                 onSearchClick.invoke()
             }
-            /*binding.back.setOnClickListener {
+            binding.back.setOnClickListener {
                 onBackClick.invoke()
-            }*/
+            }
         }
     }
 

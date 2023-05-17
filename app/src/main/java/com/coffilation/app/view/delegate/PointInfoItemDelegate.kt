@@ -12,7 +12,7 @@ import com.coffilation.app.view.item.PointInfoItem
  * @author pvl-zolotov on 14.05.2023
  */
 class PointInfoItemDelegate(
-    //private val onBackClick: () -> Unit,
+    private val onBackClick: () -> Unit,
 ) : BindingAdapterDelegate<PointInfoItem, AdapterItem, ItemPointInfoBinding>(
     PointInfoItem::class.java,
     ItemPointInfoBinding::inflate
@@ -20,9 +20,9 @@ class PointInfoItemDelegate(
 
     override fun onCreateViewHolder(inflater: LayoutInflater, parent: ViewGroup): BindingViewHolder<ItemPointInfoBinding> {
         return super.onCreateViewHolder(inflater, parent).apply {
-            /*binding.back.setOnClickListener {
+            binding.back.setOnClickListener {
                 onBackClick.invoke()
-            }*/
+            }
         }
     }
 

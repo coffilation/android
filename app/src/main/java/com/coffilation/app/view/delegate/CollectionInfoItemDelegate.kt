@@ -15,8 +15,9 @@ import com.coffilation.app.view.item.CollectionInfoItem
  * @author pvl-zolotov on 16.05.2023
  */
 class CollectionInfoItemDelegate(
-    val onEditCollectionClick: (CollectionData) -> Unit,
-    val onRemoveCollectionClick: (Long) -> Unit,
+    private val onEditCollectionClick: (CollectionData) -> Unit,
+    private val onRemoveCollectionClick: (Long) -> Unit,
+    private val onBackClick: () -> Unit,
 ) : BindingAdapterDelegate<CollectionInfoItem, AdapterItem, ItemCollectionInfoBinding>(
     CollectionInfoItem::class.java,
     ItemCollectionInfoBinding::inflate
@@ -34,6 +35,9 @@ class CollectionInfoItemDelegate(
             binding.deleteButton.setOnClickListener {
                 val collectionData = requireBoundData<CollectionData>()
                 onRemoveCollectionClick.invoke(collectionData.id)
+            }
+            binding.back.setOnClickListener {
+                onBackClick.invoke()
             }
         }
     }
