@@ -1,5 +1,6 @@
 package com.coffilation.app.view
 
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -108,7 +109,7 @@ class MainFragment : Fragment() {
                 onSearchClick = {
                     getBoundingBox()?.also(viewModel::changeModeToSearch)
                 },
-                onUserClick = {}
+                onUserClick = ::openLogOutDialog
             ),
             LoadingItemDelegate(),
             ErrorItemDelegate(viewModel::onRetryPressed),
@@ -323,6 +324,20 @@ class MainFragment : Fragment() {
         super.onStart()
         MapKitFactory.getInstance().onStart()
         binding?.mapview?.onStart()
+    }
+
+    private fun openLogOutDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setMessage(R.string.log_out_message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.yes) { dialog, id ->
+                viewModel.logOut()
+            }
+            .setNegativeButton(R.string.no) { dialog, id ->
+                dialog.dismiss()
+            }
+        val alert = builder.create()
+        alert.show()
     }
 
     private fun openEditCollectionFragment(collection: CollectionData?) {
