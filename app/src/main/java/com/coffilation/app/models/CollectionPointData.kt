@@ -12,6 +12,7 @@ class CollectionPointData(
     val primaryColor: String?,
     val secondaryColor: String?,
     var isPlaceIncluded: Boolean,
+    val canChangePlacesList: Boolean,
 ) {
 
     fun getGradientData(): GradientData? {

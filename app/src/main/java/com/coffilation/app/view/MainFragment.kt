@@ -152,7 +152,7 @@ class MainFragment : Fragment() {
                 onBackClick = viewModel::goToPreviousMode,
             ),
         )
-        autoLoadingListener = OnEndReachedListener(3, viewModel::onUserCollectionsListEndReached)
+        autoLoadingListener = OnEndReachedListener(3, viewModel::onListEndReached)
 
         binding?.recyclerView?.apply {
             layoutManager = LinearLayoutManager(context)

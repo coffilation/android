@@ -84,6 +84,7 @@
         android:id="@+id/edit_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        app:layout_goneMarginEnd="16dp"
         android:src="@drawable/ic_edit"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toStartOf="@id/delete_button"

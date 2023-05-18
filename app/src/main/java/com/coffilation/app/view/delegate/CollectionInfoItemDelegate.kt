@@ -56,5 +56,7 @@ class CollectionInfoItemDelegate(
         viewHolder.binding.collectionPic.text = collection.name.first().toString()
         val gradientData = collection.getGradientData()
         viewHolder.binding.cardBackground.background = gradientData.toDrawable(viewHolder.itemView.resources)
+        viewHolder.binding.editButton.isVisible = item.allowEdit
+        viewHolder.binding.deleteButton.isVisible = item.allowDelete
     }
 }

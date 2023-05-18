@@ -45,5 +45,8 @@ class PointCollectionItemDelegate(
         val gradientData = collection.getGradientData()
         viewHolder.binding.cardBackground.background = gradientData.toDrawable(viewHolder.itemView.resources)
         viewHolder.binding.checkbox.isChecked = collection.isPlaceIncluded
+        viewHolder.binding.checkbox.isEnabled = collection.canChangePlacesList
+        viewHolder.binding.root.isClickable = collection.canChangePlacesList
+        viewHolder.binding.root.isFocusable = collection.canChangePlacesList
     }
 }

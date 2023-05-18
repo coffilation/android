@@ -2,10 +2,13 @@ package com.coffilation.app.view.viewstate
 
 import com.coffilation.app.domain.BasicState
 import com.coffilation.app.models.CollectionData
+import com.coffilation.app.models.CollectionPermissions
+import com.coffilation.app.models.CollectionPermissionsRequestData
 import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PointData
 import com.coffilation.app.models.UserData
 import com.coffilation.app.util.UseCaseResult
+import com.coffilation.app.util.domain.ActionState
 import com.coffilation.app.view.item.CardAdapterItem
 import com.coffilation.app.view.item.CollectionInfoItem
 import com.coffilation.app.view.item.DragHandleItem
@@ -58,6 +61,7 @@ class MainViewState(
             searchResults: UseCaseResult<List<PointData>>?,
             pointCollections: BasicState<CollectionPointData>,
             pointsForCollections: UseCaseResult<List<PointData>>?,
+            collectionPermissions: ActionState<CollectionPermissionsRequestData, UseCaseResult<Array<CollectionPermissions>>>,
         ): MainViewState {
             val adapterItems = mutableListOf<CardAdapterItem<*>>()
             adapterItems.add(DragHandleItem())
@@ -128,19 +132,31 @@ class MainViewState(
                 }
                 is MainViewStateMode.Point -> {
                     adapterItems.add(PointInfoItem(mode.pointData))
-                    adapterItems.addPointCollections(pointCollections)
+                    val autoLoadingEnabled = adapterItems.addPointCollections(pointCollections)
                     return MainViewState(
                         adapterItems,
                         BottomSheetConfig(BottomSheetState.FULLSCREEN, BottomSheetState.FULLSCREEN),
                         false,
                         null,
                         null,
-                        false
+                        autoLoadingEnabled
                     )
                 }
                 is MainViewStateMode.Collection -> {
-                    adapterItems.add(CollectionInfoItem(mode.collectionData))
-                    val points = adapterItems.addPointList(pointsForCollections, mode.scrollToPoint, TYPE_COLLECTION)
+                    var points = emptyList<PointData>()
+                    if (collectionPermissions is ActionState.Success) {
+                        val allowEdit = if (collectionPermissions.data is UseCaseResult.Success) {
+                            val permissions = collectionPermissions.data.data
+                            permissions.contains(CollectionPermissions.COMPILATION_CHANGE)
+                        } else {
+                            false
+                        }
+                        val allowDelete = (userData as? UseCaseResult.Success)?.data?.id == mode.collectionData.owner.id
+                        adapterItems.add(CollectionInfoItem(mode.collectionData, allowEdit, allowDelete))
+                        points = adapterItems.addPointList(pointsForCollections, mode.scrollToPoint, TYPE_COLLECTION)
+                    } else {
+                        adapterItems.add(LoadingItem())
+                    }
                     return MainViewState(
                         adapterItems,
                         BottomSheetConfig(BottomSheetState.PEEKED_MEDIUM, BottomSheetState.PEEKED_MEDIUM),

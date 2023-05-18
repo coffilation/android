@@ -6,6 +6,9 @@ import com.coffilation.app.models.RefreshTokenData
 import com.coffilation.app.network.AuthApi
 import com.coffilation.app.network.AuthRepository
 import com.coffilation.app.network.AuthRepositoryImpl
+import com.coffilation.app.network.CollectionPermissionsApi
+import com.coffilation.app.network.CollectionPermissionsRepository
+import com.coffilation.app.network.CollectionPermissionsRepositoryImpl
 import com.coffilation.app.network.CollectionRepositoryImpl
 import com.coffilation.app.network.CollectionsApi
 import com.coffilation.app.network.CollectionsRepository
@@ -97,7 +100,9 @@ val collectionsModule = module {
             collectionsRepository = get(),
             searchRepository = get(),
             mapRepository = get(),
-            usersRepository = get()
+            collectionPermissionsRepository = get(),
+            usersRepository = get(),
+            prefRepository = get(),
         )
     }
 }
@@ -120,6 +125,16 @@ val mapModule = module {
         )
     }
     factory<MapRepository> { MapRepositoryImpl(mapApi = get()) }
+}
+
+val collectionPermissionsModule = module {
+    single {
+        createWebService<CollectionPermissionsApi>(
+            okHttpClient = createHttpClient(prefRepository = get(), authRepository = get()),
+            baseUrl = API_BASE_URL
+        )
+    }
+    factory<CollectionPermissionsRepository> { CollectionPermissionsRepositoryImpl(collectionPermissionsApi = get()) }
 }
 
 val authModule = module {
