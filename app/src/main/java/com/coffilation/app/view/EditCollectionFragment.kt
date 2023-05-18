@@ -22,6 +22,7 @@ import com.coffilation.app.view.MainFragment.Companion.KEY_COLLECTIONS_SAVING_MO
 import com.coffilation.app.view.MainFragment.Companion.KEY_COLLECTIONS_SAVING_RESULT
 import com.coffilation.app.view.MainFragment.Companion.REQUEST_KEY_EDIT_COLLECTION
 import com.coffilation.app.viewmodel.EditCollectionViewModel
+import com.google.android.material.transition.MaterialSharedAxis
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -32,6 +33,12 @@ class EditCollectionFragment : Fragment() {
 
     private var binding: FragmentEditCollectionBinding? = null
     private val viewModel: EditCollectionViewModel by viewModel()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Z, true)
+        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Z, false)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
