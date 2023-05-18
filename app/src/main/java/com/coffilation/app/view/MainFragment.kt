@@ -131,7 +131,11 @@ class MainFragment : Fragment() {
                 },
                 onBackClick = viewModel::goToPreviousMode,
             ),
-            SearchSuggestionItemDelegate(viewModel::applySearchSuggestion),
+            SearchSuggestionItemDelegate { suggest ->
+                getBoundingBox()?.also { boundingBox ->
+                    viewModel.applySearchSuggestion(suggest, boundingBox)
+                }
+            },
             SearchButtonWithNavigationItemDelegate(
                 onSearchClick = {
                     getBoundingBox()?.also(viewModel::changeModeToSearch)

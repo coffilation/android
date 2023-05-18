@@ -53,7 +53,7 @@ class MainViewState(
             userData: UseCaseResult<UserData>?,
             publicCollections: BasicState<CollectionData>,
             userCollections: BasicState<CollectionData>,
-            lastAppliedSuggestion: String?,
+            lastAppliedQueryFlow: String?,
             searchSuggestions: UseCaseResult<List<SuggestItem>>?,
             searchResults: UseCaseResult<List<PointData>>?,
             pointCollections: BasicState<CollectionPointData>,
@@ -91,7 +91,7 @@ class MainViewState(
                     )
                 }
                 is MainViewStateMode.Search -> {
-                    adapterItems.add(SearchInputItem(lastAppliedSuggestion))
+                    adapterItems.add(SearchInputItem(lastAppliedQueryFlow))
                     if (searchSuggestions is UseCaseResult.Success) {
                         if (searchSuggestions.data.isNotEmpty()) {
                             searchSuggestions.data.forEach {
@@ -115,7 +115,7 @@ class MainViewState(
                     )
                 }
                 is MainViewStateMode.SearchResults -> {
-                    adapterItems.add(SearchButtonWithNavigationItem(lastAppliedSuggestion))
+                    adapterItems.add(SearchButtonWithNavigationItem(lastAppliedQueryFlow))
                     val points = adapterItems.addPointList(searchResults, mode.scrollToPoint, TYPE_SEARCH_RESULTS)
                     return MainViewState(
                         adapterItems,

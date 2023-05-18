@@ -79,7 +79,7 @@ class MainViewModel(
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
     private val searchQueryFlow = MutableStateFlow("")
-    private val lastAppliedSuggestionFlow = MutableStateFlow<String?>(null)
+    private val lastAppliedQueryFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
     private val searchResultsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
     private val pointsForCollectionsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
@@ -89,7 +89,7 @@ class MainViewModel(
         userDataFlow,
         publicCollectionsModel.state,
         userCollectionsModel.state,
-        lastAppliedSuggestionFlow,
+        lastAppliedQueryFlow,
         searchSuggestionsFlow,
         searchResultsFlow,
         pointCollectionsModel.state,
@@ -144,7 +144,7 @@ class MainViewModel(
             searchSuggestionsFlow.value = it
         }.launchIn(viewModelScope)
 
-        searchQueryFlow.combine(
+        lastAppliedQueryFlow.filterNotNull().combine(
             modeFlow.filterIsInstance<MainViewState.MainViewStateMode.SearchResults>()
         ) { query, mode ->
             query to mode.boundingBox
@@ -154,7 +154,7 @@ class MainViewModel(
             searchResultsFlow.value = it
         }.launchIn(viewModelScope)
 
-        lastAppliedSuggestionFlow.filterNotNull().onEach {
+        lastAppliedQueryFlow.filterNotNull().onEach {
             searchQueryFlow.value = it
         }.launchIn(viewModelScope)
 
@@ -266,12 +266,13 @@ class MainViewModel(
         searchQueryFlow.value = query
     }
 
-    fun applySearchSuggestion(suggestItem: SuggestItem) {
-        lastAppliedSuggestionFlow.value = suggestItem.displayText
+    fun applySearchSuggestion(suggestItem: SuggestItem, boundingBox: BoundingBox) {
+        lastAppliedQueryFlow.value = suggestItem.displayText
+        changeModeToSearchResults(boundingBox, null)
     }
 
     fun showSearchResults(boundingBox: BoundingBox) {
-        lastAppliedSuggestionFlow.value = searchQueryFlow.value
+        lastAppliedQueryFlow.value = searchQueryFlow.value
         changeModeToSearchResults(boundingBox, null)
     }
 
