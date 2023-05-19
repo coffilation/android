@@ -44,11 +44,11 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import retrofit2.Response
 
 
 class MainViewModel(
@@ -69,27 +69,35 @@ class MainViewModel(
 
     private val publicCollectionsModel = publicCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
     private val userCollectionsModel = userCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
+
+    private val searchResultsModel = actionModel<SearchData, List<PointData>>(viewModelScope) { requestData ->
+        searchRepository.search(requestData)
+    }
+
     private val pointCollectionsModel = pointCollectionsInteractor.getModel(viewModelScope, PAGE_SIZE)
-    private val addPointToCollectionModel = actionModel<CollectionPointModifyRequestData, UseCaseResult<Unit>>(viewModelScope) { requestData ->
+    private val addPointToCollectionModel = actionModel<CollectionPointModifyRequestData, Response<Unit>>(viewModelScope) { requestData ->
         collectionsRepository.addPlaceToCollection(requestData.collectionId, requestData.pointId)
     }
-    private val removePointFromCollectionModel = actionModel<CollectionPointModifyRequestData, UseCaseResult<Unit>>(viewModelScope) { requestData ->
+    private val removePointFromCollectionModel = actionModel<CollectionPointModifyRequestData, Response<Unit>>(viewModelScope) { requestData ->
         collectionsRepository.removePlaceFromCollection(requestData.collectionId, requestData.pointId)
     }
-    private val removeCollectionModel = actionModel<Long, UseCaseResult<Unit>>(viewModelScope) { id ->
-        collectionsRepository.removeCollection(id)
-    }
-    private val collectionPermissionsModel = actionModel<CollectionPermissionsRequestData, UseCaseResult<Array<CollectionPermissions>>>(viewModelScope) { requestData ->
+
+    private val collectionPermissionsModel = actionModel<CollectionPermissionsRequestData, Array<CollectionPermissions>>(viewModelScope) { requestData ->
         collectionPermissionsRepository.getCollectionPermissions(requestData.collectionId, requestData.userId)
+    }
+    private val pointsForCollectionModel = actionModel<Long, List<PointData>>(viewModelScope) { collectionId ->
+        mapRepository.getPointsForCollections(arrayOf(collectionId))
+    }
+    private val removeCollectionModel = actionModel<Long, Response<Unit>>(viewModelScope) { id ->
+        collectionsRepository.removeCollection(id)
     }
 
     private val modeFlow = MutableStateFlow<MainViewState.MainViewStateMode>(MainViewState.MainViewStateMode.Collections)
     private val userDataFlow = MutableStateFlow<UseCaseResult<UserData>?>(null)
+
     private val searchQueryFlow = MutableStateFlow("")
     private val lastAppliedQueryFlow = MutableStateFlow<String?>(null)
     private val searchSuggestionsFlow = MutableStateFlow<UseCaseResult<List<SuggestItem>>?>(null)
-    private val searchResultsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
-    private val pointsForCollectionsFlow = MutableStateFlow<UseCaseResult<List<PointData>>?>(null)
 
     private val viewStateFlow = combine(
         modeFlow,
@@ -98,9 +106,9 @@ class MainViewModel(
         userCollectionsModel.state,
         lastAppliedQueryFlow,
         searchSuggestionsFlow,
-        searchResultsFlow,
+        searchResultsModel.state,
         pointCollectionsModel.state,
-        pointsForCollectionsFlow,
+        pointsForCollectionModel.state,
         collectionPermissionsModel.state,
     ) { data ->
         @Suppress("UNCHECKED_CAST")
@@ -111,10 +119,10 @@ class MainViewModel(
             data[3] as BasicState<CollectionData>,
             data[4] as String?,
             data[5] as UseCaseResult<List<SuggestItem>>?,
-            data[6] as UseCaseResult<List<PointData>>?,
+            data[6] as ActionState<SearchData, List<PointData>>,
             data[7] as BasicState<CollectionPointData>,
-            data[8] as UseCaseResult<List<PointData>>?,
-            data[9] as ActionState<CollectionPermissionsRequestData, UseCaseResult<Array<CollectionPermissions>>>,
+            data[8] as ActionState<Long, List<PointData>>,
+            data[9] as ActionState<CollectionPermissionsRequestData, Array<CollectionPermissions>>,
         )
     }
 
@@ -155,10 +163,8 @@ class MainViewModel(
             modeFlow.filterIsInstance<MainViewState.MainViewStateMode.SearchResults>()
         ) { query, mode ->
             query to mode.boundingBox
-        }.map { (query, boundingBox) ->
-            searchRepository.search(SearchData.newInstance(boundingBox, query))
-        }.onEach {
-            searchResultsFlow.value = it
+        }.onEach { (query, boundingBox) ->
+            searchResultsModel.action.invoke(SearchData.newInstance(boundingBox, query))
         }.launchIn(viewModelScope)
 
         lastAppliedQueryFlow.filterNotNull().onEach {
@@ -178,28 +184,27 @@ class MainViewModel(
         }.launchIn(viewModelScope)
 
         merge(addPointToCollectionModel.state, removePointFromCollectionModel.state)
-            .filterIsInstance<ActionState.Success<CollectionPointModifyRequestData, UseCaseResult<Unit>>>()
             .onEach { result ->
-                if (result.data is UseCaseResult.Success<*>) {
+                if (result is ActionState.Success) {
                     val pointId = result.params.pointId
                     val userData = userDataFlow.value
                     if (userData is UseCaseResult.Success<UserData>) {
                         pointCollectionsModel.refresh.invoke(CollectionPointRequestData(userData.data.id, pointId))
+                        pointsForCollectionModel.refresh.invoke()
                     }
-                } else if (result.data is UseCaseResult.Error) {
+                } else if (result is ActionState.Error) {
                     mutableAction.value = Action.ShowPointModifyError
                 }
             }
             .launchIn(viewModelScope)
 
         removeCollectionModel.state
-            .filterIsInstance<ActionState.Success<CollectionPointModifyRequestData, UseCaseResult<Unit>>>()
             .onEach { result ->
-                if (result.data is UseCaseResult.Success<*>) {
+                if (result is ActionState.Success) {
                     updateUserCollections()
                     updatePublicCollections()
                     changeModeToCollections()
-                } else if (result.data is UseCaseResult.Error){
+                } else if (result is ActionState.Error){
                     mutableAction.value = Action.ShowRemoveCollectionError
                 }
             }.launchIn(viewModelScope)
@@ -252,10 +257,8 @@ class MainViewModel(
         modeFlow.value = MainViewState.MainViewStateMode.Collection(collectionData, scrollToPoint)
         val userData = userDataFlow.value
         if (userData is UseCaseResult.Success<UserData>) {
-            viewModelScope.launch {
-                pointsForCollectionsFlow.value = mapRepository.getPointsForCollections(arrayOf(collectionData.id))
-            }
-            collectionPermissionsModel.action(CollectionPermissionsRequestData(collectionData.id, userData.data.id))
+            pointsForCollectionModel.action.invoke(collectionData.id)
+            collectionPermissionsModel.action.invoke(CollectionPermissionsRequestData(collectionData.id, userData.data.id))
         }
     }
 
@@ -331,8 +334,17 @@ class MainViewModel(
             MainViewState.TYPE_USER_COLLECTIONS -> {
                 onUserCollectionsListRetryPressed()
             }
+            MainViewState.TYPE_SEARCH_RESULTS -> {
+                searchResultsModel.retry.invoke()
+            }
             MainViewState.TYPE_POINT_COLLECTIONS -> {
                 onPointCollectionsListRetryPressed()
+            }
+            MainViewState.TYPE_COLLECTION -> {
+                pointsForCollectionModel.retry.invoke()
+            }
+            MainViewState.TYPE_PERMISSIONS -> {
+                collectionPermissionsModel.retry.invoke()
             }
         }
     }

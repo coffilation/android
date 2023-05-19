@@ -6,6 +6,7 @@ import com.coffilation.app.models.CollectionData
 import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PlacesToModifyData
 import com.coffilation.app.util.UseCaseResult
+import retrofit2.Response
 
 /**
  * @author pvl-zolotov on 21.11.2022
@@ -22,11 +23,11 @@ interface CollectionsRepository {
 
     suspend fun getPointCollections(page: Int, pageSize: Int, userId: Long, pointId: Long): UseCaseResult<BasicList<CollectionPointData>>
 
-    suspend fun addPlaceToCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit>
+    suspend fun addPlaceToCollection(collectionId: Long, pointId: Long): Response<Unit>
 
-    suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit>
+    suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): Response<Unit>
 
-    suspend fun removeCollection(collectionId: Long): UseCaseResult<Unit>
+    suspend fun removeCollection(collectionId: Long): Response<Unit>
 }
 
 class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : CollectionsRepository {
@@ -76,30 +77,15 @@ class CollectionRepositoryImpl(private val collectionsApi: CollectionsApi) : Col
         }
     }
 
-    override suspend fun addPlaceToCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit> {
-        return try {
-            collectionsApi.addPlaceToCollection(collectionId, PlacesToModifyData(arrayOf(pointId)))
-            UseCaseResult.Success(Unit)
-        } catch (ex: Exception) {
-            UseCaseResult.Error(ex)
-        }
+    override suspend fun addPlaceToCollection(collectionId: Long, pointId: Long): Response<Unit> {
+        return collectionsApi.addPlaceToCollection(collectionId, PlacesToModifyData(arrayOf(pointId)))
     }
 
-    override suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): UseCaseResult<Unit> {
-        return try {
-            collectionsApi.removePlaceFromCollection(collectionId, PlacesToModifyData(arrayOf(pointId)))
-            UseCaseResult.Success(Unit)
-        } catch (ex: Exception) {
-            UseCaseResult.Error(ex)
-        }
+    override suspend fun removePlaceFromCollection(collectionId: Long, pointId: Long): Response<Unit> {
+        return collectionsApi.removePlaceFromCollection(collectionId, PlacesToModifyData(arrayOf(pointId)))
     }
 
-    override suspend fun removeCollection(collectionId: Long): UseCaseResult<Unit> {
-        return try {
-            collectionsApi.removeCollection(collectionId)
-            UseCaseResult.Success(Unit)
-        } catch (ex: Exception) {
-            UseCaseResult.Error(ex)
-        }
+    override suspend fun removeCollection(collectionId: Long): Response<Unit> {
+        return collectionsApi.removeCollection(collectionId)
     }
 }

@@ -6,6 +6,7 @@ import com.coffilation.app.models.CollectionPermissions
 import com.coffilation.app.models.CollectionPermissionsRequestData
 import com.coffilation.app.models.CollectionPointData
 import com.coffilation.app.models.PointData
+import com.coffilation.app.models.SearchData
 import com.coffilation.app.models.UserData
 import com.coffilation.app.util.UseCaseResult
 import com.coffilation.app.util.domain.ActionState
@@ -50,6 +51,7 @@ class MainViewState(
         const val TYPE_SEARCH_RESULTS = 4
         const val TYPE_POINT_COLLECTIONS = 5
         const val TYPE_COLLECTION = 6
+        const val TYPE_PERMISSIONS = 7
 
         fun valueOf(
             mode: MainViewStateMode,
@@ -58,10 +60,10 @@ class MainViewState(
             userCollections: BasicState<CollectionData>,
             lastAppliedQueryFlow: String?,
             searchSuggestions: UseCaseResult<List<SuggestItem>>?,
-            searchResults: UseCaseResult<List<PointData>>?,
+            searchResults: ActionState<SearchData, List<PointData>>,
             pointCollections: BasicState<CollectionPointData>,
-            pointsForCollections: UseCaseResult<List<PointData>>?,
-            collectionPermissions: ActionState<CollectionPermissionsRequestData, UseCaseResult<Array<CollectionPermissions>>>,
+            pointsForCollections: ActionState<Long, List<PointData>>,
+            collectionPermissions: ActionState<CollectionPermissionsRequestData, Array<CollectionPermissions>>,
         ): MainViewState {
             val adapterItems = mutableListOf<CardAdapterItem<*>>()
             adapterItems.add(DragHandleItem())
@@ -144,18 +146,25 @@ class MainViewState(
                 }
                 is MainViewStateMode.Collection -> {
                     var points = emptyList<PointData>()
-                    if (collectionPermissions is ActionState.Success) {
-                        val allowEdit = if (collectionPermissions.data is UseCaseResult.Success) {
-                            val permissions = collectionPermissions.data.data
-                            permissions.contains(CollectionPermissions.COMPILATION_CHANGE)
-                        } else {
-                            false
+                    when (collectionPermissions) {
+                        is ActionState.Success -> {
+                            val permissions = collectionPermissions.data
+                            val allowEdit = if (permissions.contains(CollectionPermissions.COMPILATION_CHANGE)) {
+                                permissions.contains(CollectionPermissions.COMPILATION_CHANGE)
+                            } else {
+                                false
+                            }
+                            val allowDelete = (userData as? UseCaseResult.Success)?.data?.id == mode.collectionData.owner.id
+                            adapterItems.add(CollectionInfoItem(mode.collectionData, allowEdit, allowDelete))
+                            points = adapterItems.addPointList(pointsForCollections, mode.scrollToPoint, TYPE_COLLECTION)
                         }
-                        val allowDelete = (userData as? UseCaseResult.Success)?.data?.id == mode.collectionData.owner.id
-                        adapterItems.add(CollectionInfoItem(mode.collectionData, allowEdit, allowDelete))
-                        points = adapterItems.addPointList(pointsForCollections, mode.scrollToPoint, TYPE_COLLECTION)
-                    } else {
-                        adapterItems.add(LoadingItem())
+                        is ActionState.Process -> {
+                            adapterItems.add(LoadingItem())
+                        }
+                        is ActionState.Error -> {
+                            adapterItems.add(ErrorItem(TYPE_PERMISSIONS))
+                        }
+                        is ActionState.Initial -> {}
                     }
                     return MainViewState(
                         adapterItems,
@@ -256,22 +265,27 @@ class MainViewState(
         }
 
         private fun MutableList<CardAdapterItem<*>>.addPointList(
-            pointsResult: UseCaseResult<List<PointData>>?,
+            pointsResult: ActionState<*, List<PointData>>,
             scrollToPoint: PointData?,
             errorItemType: Int
         ): List<PointData> {
             var points = emptyList<PointData>()
-            if (pointsResult is UseCaseResult.Success) {
-                if (pointsResult.data.isNotEmpty()) {
-                    add(SearchResultsListItem(pointsResult.data, scrollToPoint))
-                    points = pointsResult.data
-                } else {
-                    add(EmptyItem())
+            when (pointsResult) {
+                is ActionState.Success -> {
+                    if (pointsResult.data.isNotEmpty()) {
+                        add(SearchResultsListItem(pointsResult.data, scrollToPoint))
+                        points = pointsResult.data
+                    } else {
+                        add(EmptyItem())
+                    }
                 }
-            } else if (pointsResult is UseCaseResult.Error) {
-                add(ErrorItem(errorItemType))
-            } else {
-                add(LoadingItem())
+                is ActionState.Error -> {
+                    add(ErrorItem(errorItemType))
+                }
+                is ActionState.Process -> {
+                    add(LoadingItem())
+                }
+                is ActionState.Initial -> {}
             }
             return points
         }

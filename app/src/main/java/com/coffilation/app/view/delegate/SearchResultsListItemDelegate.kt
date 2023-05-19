@@ -48,7 +48,9 @@ class SearchResultsListItemDelegate(
             onScrollListener = UserScrollListener {
                 getBoundData<List<PointData>>()?.also { points ->
                     val pos = (binding.recyclerView.layoutManager as RatioLayoutManager).findFirstCompletelyVisibleItemPosition()
-                    onScrolled.invoke(points[pos])
+                    if (pos != -1) {
+                        onScrolled.invoke(points[pos])
+                    }
                 }
             }
         }

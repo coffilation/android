@@ -17,7 +17,8 @@ import kotlinx.coroutines.flow.onEach
 class ActionModel<T, R>(
     val state: StateFlow<ActionState<T, R>>,
     val action: (T) -> Unit,
-    val retry: () -> Unit
+    val retry: () -> Unit,
+    val refresh: () -> Unit
 ) {
 
     sealed class Event<T, R> {
@@ -29,6 +30,8 @@ class ActionModel<T, R>(
         class PerformFailed<T, R>(val params: T, val error: Throwable) : Event<T, R>()
 
         class RetryRequested<T, R> : Event<T, R>()
+
+        class RefreshRequested<T, R> : Event<T, R>()
     }
 
     class PerformActionEffect<T>(val params: T)
@@ -103,6 +106,21 @@ fun <T, R> actionModel(
             }
             inOtherStateSkip()
         }
+        onEvent<Event.RefreshRequested<T, R>> {
+            inState<ActionState.Success<T, R>> { state, _ ->
+                result(
+                    ActionState.Process(state.params),
+                    PerformActionEffect(state.params)
+                )
+            }
+            inState<ActionState.Error<T, R>> { state, _ ->
+                result(
+                    ActionState.Process(state.params),
+                    PerformActionEffect(state.params)
+                )
+            }
+            inOtherStateSkip()
+        }
     }
 
     val performingEvents = config.effects
@@ -124,7 +142,8 @@ fun <T, R> actionModel(
         action = { params ->
             stateMachine.send(Event.PerformRequested(params))
         },
-        retry = { stateMachine.send(Event.RetryRequested()) }
+        retry = { stateMachine.send(Event.RetryRequested()) },
+        refresh = { stateMachine.send(Event.RefreshRequested()) }
     )
 }
 
@@ -145,6 +164,7 @@ fun <T, R> actionModelLazy(
     return ActionModel(
         state = state,
         action = { wrapped.action.invoke(it) },
-        retry = { wrapped.retry.invoke() }
+        retry = { wrapped.retry.invoke() },
+        refresh = { wrapped.refresh.invoke() }
     )
 }
