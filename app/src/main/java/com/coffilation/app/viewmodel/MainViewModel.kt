@@ -40,6 +40,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -160,7 +161,9 @@ class MainViewModel(
         }.launchIn(viewModelScope)
 
         lastAppliedQueryFlow.filterNotNull().combine(
-            modeFlow.filterIsInstance<MainViewState.MainViewStateMode.SearchResults>()
+            modeFlow
+                .filterIsInstance<MainViewState.MainViewStateMode.SearchResults>()
+                .distinctUntilChanged { old, new -> old.boundingBox == new.boundingBox }
         ) { query, mode ->
             query to mode.boundingBox
         }.onEach { (query, boundingBox) ->
