@@ -1,20 +1,14 @@
 package com.coffilation.app
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowCompat
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.add
 import androidx.fragment.app.commit
 import com.coffilation.app.databinding.ActivityMainBinding
 import com.coffilation.app.view.MainFragment
-import com.yandex.mapkit.MapKitFactory
 
 class MainActivity : AppCompatActivity() {
 
