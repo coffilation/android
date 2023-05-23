@@ -1,4 +1,4 @@
-package com.coffilation.app
+package com.coffilation.app.view
 
 import android.os.Bundle
 import android.view.Menu
@@ -7,8 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.add
 import androidx.fragment.app.commit
+import com.coffilation.app.R
 import com.coffilation.app.databinding.ActivityMainBinding
-import com.coffilation.app.view.MainFragment
 
 class MainActivity : AppCompatActivity() {
 
