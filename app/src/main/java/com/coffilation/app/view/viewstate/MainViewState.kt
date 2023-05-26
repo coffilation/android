@@ -196,7 +196,9 @@ class MainViewState(
                 }
                 is BasicState.AllPagesLoaded -> {
                     val data = publicCollections.data
-                    add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, false))
+                    if (data.isNotEmpty()) {
+                        add(PublicCollectionsListItem(data.map { PublicCollectionItem(it) }, false))
+                    }
                 }
                 is BasicState.CanLoadMore -> {
                     val data = publicCollections.data

@@ -329,7 +329,6 @@ class MainFragment : Fragment() {
     private fun openLogOutDialog() {
         val builder = AlertDialog.Builder(requireContext())
         builder.setMessage(R.string.log_out_message)
-            .setCancelable(false)
             .setPositiveButton(R.string.yes) { dialog, id ->
                 viewModel.logOut()
             }
